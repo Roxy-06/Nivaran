@@ -1,6 +1,6 @@
-# 🏙️ CivicPulse
+# 🏙️ Nivaran
 
-**CivicPulse** is a AI-powered civic issue reporting and management platform that bridges the gap between citizens and government departments through transparency, prioritization, and accountability.
+**Nivaran** is a AI-powered civic issue reporting and management platform that bridges the gap between citizens and government departments through transparency, prioritization, and accountability.
 
 Built for hackathons, scalability, and real-world civic impact.
 
