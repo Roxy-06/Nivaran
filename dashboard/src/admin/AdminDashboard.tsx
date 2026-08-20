@@ -7,12 +7,16 @@ type Issue = {
   priority: "Low" | "Medium" | "High";
   status: "Reported" | "In Progress" | "Resolved";
   message?: string;
-  areaImpact?: string[];
+  areaImpact?: string[] | { schools?: number; hospitals?: number; residential?: number };
   location?: {
     lat: number;
     lon: number;
   };
   media?: string | null;
+  voice_audio?: string | null;
+  detected_language?: string | null;
+  transcript?: string | null;
+  translation?: string | null;
   reportedAt?: string;
 };
 
@@ -169,16 +173,44 @@ export default function AdminDashboard() {
             <p><b>Status:</b> {selectedIssue.status}</p>
             <p><b>Priority:</b> {selectedIssue.priority}</p>
 
-            {selectedIssue.message && (
-              <p><b>Description:</b> {selectedIssue.message}</p>
+            {selectedIssue.voice_audio && (
+              <div style={{ marginTop: 12, marginBottom: 12, padding: 12, background: "#eff6ff", borderRadius: 8 }}>
+                <b style={{ color: "#1e40af", display: "block", marginBottom: 6 }}>🎙️ Citizen Voice Recording:</b>
+                <audio
+                  src={`http://localhost:8000/${selectedIssue.voice_audio}`}
+                  controls
+                  style={{ width: "100%", height: 36 }}
+                />
+              </div>
             )}
 
-            {Array.isArray(selectedIssue.areaImpact) && (
+            {selectedIssue.transcript && selectedIssue.transcript !== selectedIssue.message && (
+              <div style={{ marginTop: 10, padding: 10, background: "#fdf4ff", borderRadius: 8 }}>
+                <b style={{ color: "#86198f" }}>
+                  Original Transcript ({selectedIssue.detected_language ? selectedIssue.detected_language.toUpperCase() : "REGIONAL"}):
+                </b>
+                <p style={{ margin: "4px 0 0 0", color: "#4c0519" }}>{selectedIssue.transcript}</p>
+              </div>
+            )}
+
+            {selectedIssue.message && (
+              <p><b>Description (Standardized):</b> {selectedIssue.translation || selectedIssue.message}</p>
+            )}
+
+            {Array.isArray(selectedIssue.areaImpact) ? (
               <p>
                 <b>Nearby Places:</b>{" "}
                 {selectedIssue.areaImpact.join(", ")}
               </p>
-            )}
+            ) : selectedIssue.areaImpact && typeof selectedIssue.areaImpact === "object" ? (
+              <p>
+                <b>Nearby Places:</b>{" "}
+                {Object.entries(selectedIssue.areaImpact)
+                  .filter(([_, count]) => (count as number) > 0)
+                  .map(([type, count]) => `${count} ${type}`)
+                  .join(", ") || "None"}
+              </p>
+            ) : null}
 
             {selectedIssue.location && (
               <p>

@@ -46,9 +46,27 @@ def init_db():
         department TEXT,
         priority TEXT,
         confidence REAL,
-        reportedAt TEXT
+        reportedAt TEXT,
+        voice_audio TEXT,
+        detected_language TEXT,
+        transcript TEXT,
+        translation TEXT
     )
     """)
+
+    # Auto-migration for existing SQLite databases
+    cursor.execute("PRAGMA table_info(issues)")
+    existing_cols = [col[1] for col in cursor.fetchall()]
+    new_cols = [
+        ("voice_audio", "TEXT"),
+        ("detected_language", "TEXT"),
+        ("transcript", "TEXT"),
+        ("translation", "TEXT")
+    ]
+    for col_name, col_type in new_cols:
+        if col_name not in existing_cols:
+            cursor.execute(f"ALTER TABLE issues ADD COLUMN {col_name} {col_type}")
+
     conn.commit()
     
     # Seed default users
@@ -232,8 +250,8 @@ class IssuesCollection:
             
         cursor.execute(
             """
-            INSERT INTO issues (_id, serial, message, location, areaImpact, media, status, department, priority, confidence, reportedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO issues (_id, serial, message, location, areaImpact, media, status, department, priority, confidence, reportedAt, voice_audio, detected_language, transcript, translation)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 doc["_id"],
@@ -246,7 +264,11 @@ class IssuesCollection:
                 doc.get("department"),
                 doc.get("priority"),
                 doc.get("confidence"),
-                rep_at
+                rep_at,
+                doc.get("voice_audio"),
+                doc.get("detected_language"),
+                doc.get("transcript"),
+                doc.get("translation")
             )
         )
         conn.commit()
