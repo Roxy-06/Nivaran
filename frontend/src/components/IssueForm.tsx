@@ -97,7 +97,7 @@ export default function IssueForm() {
               onClick={useMyLocation}
               disabled={locationReady}
             >
-              {locationReady ? " Location Located" : " Use My Location"}
+              {locationReady ? " Location Found" : " Use My Location"}
             </button>
 
             <input

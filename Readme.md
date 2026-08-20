@@ -1,87 +1,125 @@
-# 🏙️ Nivaran
+# Nivaran
 
-**Nivaran** is a AI-powered civic issue reporting and management platform that bridges the gap between citizens and government departments through transparency, prioritization, and accountability.
-
-Built for hackathons, scalability, and real-world civic impact.
+AI-powered civic issue reporting and management platform. Citizens report issues via text/image, AI classifies them to departments and sets priority, and government admins/departments manage resolution through role-based dashboards.
 
 ---
 
-## 🚀 Features
+## Prerequisites
 
-### 👥 Citizen Side
-- Report civic issues with text, image, and geolocation
-- Anonymous and secure submissions
-- AI-based department classification & priority detection
-- Nearby area impact detection
-
-### 🧑‍💼 Admin Dashboard
-- View all issues across departments
-- Filter by department
-- Sort by priority (High → Low)
-- Update issue status and priority
-- Analytics-ready architecture
-
-### 🏢 Department Dashboard
-- View only department-specific issues
-- Update issue status (Reported → In Progress → Resolved)
-- Read-only priority
-- Detailed issue view with media & location
+- **Python 3.10+**
+- **Node.js 18+**
+- **Git**
 
 ---
 
-## 🧠 AI Capabilities
-- Natural language analysis of complaints
-- Automatic department mapping
-- Priority scoring (High / Medium / Low)
-- False or non-public issue detection
+## Quick Start
+
+### 1. Clone the repo
+
+```bash
+git clone <repo-url>
+cd Nivaran
+```
+
+### 2. Backend (FastAPI)
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Mac/Linux
+pip install -r requirements.txt
+```
+
+**Pre-download the AI model** (one-time, ~470MB, makes startup instant):
+
+```bash
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
+```
+
+**Run the backend:**
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+Backend runs at **http://localhost:8000**
+
+### 3. Frontend (Citizen App)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend runs at **http://localhost:5173**
+
+### 4. Dashboard (Admin & Department)
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Dashboard runs at **http://localhost:5174**
 
 ---
 
-## 🛠️ Tech Stack
+## Ports
 
-### Frontend
-- React (Vite + TypeScript)
+| Service | URL |
+|---------|-----|
+| Backend API | http://localhost:8000 |
+| Frontend (Citizen) | http://localhost:5173 |
+| Dashboard (Admin/Dept) | http://localhost:5174 |
+
+---
+
+## Test Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@civicpulse.com | admin123 |
+| Electricity Board | electricity@civicpulse.com | department123 |
+| Municipality | municipality@civicpulse.com | department123 |
+| Roads Department | roads@civicpulse.com | department123 |
+| Water Board | water@civicpulse.com | department123 |
+| Public Safety | safety@civicpulse.com | department123 |
+
+---
+
+## Tech Stack
+
+### Frontend & Dashboard
+- React 19 / 18 (Vite + TypeScript)
 - React Router
 - Axios
-- Inline CSS (hackathon-friendly)
 
 ### Backend
-- FastAPI
-- MongoDB (Motor async driver)
-- JWT Authentication
-- Passlib (bcrypt)
-
-### AI / Utilities
-- Sentence Transformers
-- Custom AI logic for issue analysis
-- Geolocation-based nearby place detection
+- FastAPI + Uvicorn
+- SQLite (async wrapper)
+- JWT Authentication (python-jose + bcrypt)
+- Sentence Transformers (multilingual: English, Tamil, Hindi)
+- OpenStreetMap Overpass API (nearby place detection)
 
 ---
 
-### How to run Backend
+## Features
 
-- cd backend
-- pip install -r requirements.txt
-- python -m uvicorn app.main:app --reload
+### Citizen Side
+- Report civic issues with text, image, and geolocation
+- AI-based department classification and priority detection
+- Nearby area impact detection (schools, hospitals, residential)
+- Serial-number-based issue tracking
 
-### How to run Frontend
+### Admin Dashboard
+- View all issues across departments
+- Filter by department, sort by priority
+- Update issue status and priority
 
-- cd frontend
-- npm install
-- npm run dev
-
-### How to run Dashboard
-
-- cd dashboard
-- npm install
-- npm run dev
-
-### Test Credentials
-
-- Admin:
-- email: admin@civicpulse.com
-- password: admin123
-
-- Department:
-- email: electricity@civicpulse.com
-- password: department123
+### Department Dashboard
+- View department-specific issues only
+- Update issue status (Reported -> In Progress -> Resolved)
+- Detail view with media and location

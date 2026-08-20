@@ -4,15 +4,14 @@ import sqlite3
 import json
 import uuid
 from datetime import datetime
-from passlib.context import CryptContext
+from app.auth import pwd_context
+
 
 # Set up SQLite database file paths
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "db"))
 os.makedirs(DB_DIR, exist_ok=True)
 DB_PATH = os.path.join(DB_DIR, "civicpulse.db")
 
-# Setup Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)

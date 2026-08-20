@@ -7,7 +7,7 @@ from fastapi import (
     Body,
     Depends,
 )
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 try:
@@ -97,7 +97,7 @@ async def create_issue(
         "department": analysis["department"],
         "priority": analysis["priority"],
         "confidence": analysis["confidence"],
-        "reportedAt": datetime.utcnow(),
+        "reportedAt": datetime.now(timezone.utc),
     }
 
     await issues_collection.insert_one(issue_doc)

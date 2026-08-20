@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Login from "./auth/Login";
 import AdminDashboard from "./admin/AdminDashboard";
 import DepartmentDashboard from "./department/DepartmentDashboard";
-import ProtectedRoute from "./routes/ProctectedRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 export default function App() {
   return (
