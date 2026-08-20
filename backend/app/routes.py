@@ -14,7 +14,7 @@ from app.auth import get_current_user, verify_password, create_token
 from app.database import issues_collection, users_collection
 from app.utils import generate_serial
 from app.geo import detect_nearby_places
-from app.ai import analyze_issue
+from app.ai import analyze_issue, get_missing_info_questions
 from app.models import UserLogin
 
 # ======================================================
@@ -48,6 +48,22 @@ async def login(data: UserLogin = Body(...)):
         "role": user["role"],
         "department": user.get("department"),
     }
+
+
+# ======================================================
+# FOLLOW-UP CHECK: MISSING INFO AGAINST FORM FIELDS
+# ======================================================
+@router.post("/issues/follow-up")
+async def follow_up_questions(
+    message: str = Form(...),
+    latitude: float | None = Form(None),
+    longitude: float | None = Form(None),
+):
+    nearby = {}
+    if latitude is not None and longitude is not None:
+        nearby = detect_nearby_places(latitude, longitude)
+
+    return get_missing_info_questions(message, nearby)
 
 
 # ======================================================

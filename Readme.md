@@ -34,6 +34,7 @@ Built for hackathons, scalability, and real-world civic impact.
 - Automatic department mapping
 - Priority scoring (High / Medium / Low)
 - False or non-public issue detection
+- Follow-up question pipeline for incomplete complaint details against predefined form fields
 
 ---
 

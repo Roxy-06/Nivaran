@@ -3,3 +3,6 @@ uvicorn
 motor
 python-multipart
 pydantic
+python-jose
+passlib[bcrypt]
+sentence-transformers

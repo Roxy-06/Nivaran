@@ -1,4 +1,5 @@
 from sentence_transformers import SentenceTransformer, util
+import re
 
 # ======================================================
 # Multilingual semantic model (EN + TA + HI)
@@ -7,6 +8,91 @@ from sentence_transformers import SentenceTransformer, util
 model = SentenceTransformer(
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
+
+FORM_FIELDS = {
+    "issue_type": {
+        "question": "What kind of civic issue are you reporting?",
+        "keywords": [
+            "pothole",
+            "road",
+            "garbage",
+            "drainage",
+            "sewage",
+            "water",
+            "leak",
+            "power",
+            "electricity",
+            "street light",
+            "lamp",
+            "safety",
+            "unsafe",
+            "traffic signal",
+            "wall collapse",
+            "flood",
+            "overflow",
+            "broken",
+        ],
+    },
+    "location": {
+        "question": "Can you share the exact nearby landmark, street, or locality where this issue is happening?",
+        "keywords": [
+            "near",
+            "opposite",
+            "beside",
+            "in front of",
+            "street",
+            "road",
+            "lane",
+            "junction",
+            "market",
+            "school",
+            "hospital",
+            "temple",
+            "park",
+            "bus stand",
+            "area",
+            "locality",
+        ],
+    },
+    "urgency": {
+        "question": "Is this an urgent hazard or emergency that could affect people immediately?",
+        "keywords": [
+            "danger",
+            "urgent",
+            "emergency",
+            "risk",
+            "unsafe",
+            "accident",
+            "hazard",
+            "life threatening",
+            "falling",
+            "collapse",
+            "fire",
+            "flood",
+            "blocked",
+        ],
+    },
+    "impact": {
+        "question": "How is this affecting residents, traffic, or public services?",
+        "keywords": [
+            "affecting",
+            "impact",
+            "traffic",
+            "public",
+            "people",
+            "school",
+            "hospital",
+            "resident",
+            "blocked",
+            "stagnant",
+            "overflow",
+            "no water",
+            "power cut",
+            "dark",
+            "danger",
+        ],
+    },
+}
 
 # ======================================================
 # Civic department reference phrases
@@ -57,6 +143,55 @@ CATEGORY_EMB = {
     for dept, texts in CATEGORIES.items()
 }
 NON_PUBLIC_EMB = model.encode(NON_PUBLIC_TOPICS, convert_to_tensor=True)
+
+
+def _normalize_text(text: str) -> str:
+    return re.sub(r"\s+", " ", (text or "").lower()).strip()
+
+
+def _has_any_keyword(text: str, keywords: list[str]) -> bool:
+    norm_text = _normalize_text(text)
+    return any(keyword.lower() in norm_text for keyword in keywords)
+
+
+def get_missing_info_questions(message: str, nearby: dict | None = None) -> dict:
+    """Check whether a complaint description is missing critical form information."""
+    norm_text = _normalize_text(message)
+    nearby = nearby or {}
+
+    if not norm_text:
+        return {
+            "needs_follow_up": True,
+            "missing_fields": ["issue_type", "location", "urgency", "impact"],
+            "questions": [
+                {"field": field_name, "question": config["question"]}
+                for field_name, config in FORM_FIELDS.items()
+            ],
+        }
+
+    detected = {
+        "issue_type": _has_any_keyword(norm_text, FORM_FIELDS["issue_type"]["keywords"]),
+        "location": _has_any_keyword(norm_text, FORM_FIELDS["location"]["keywords"]) or bool(nearby and any(nearby.values())),
+        "urgency": _has_any_keyword(norm_text, FORM_FIELDS["urgency"]["keywords"]),
+        "impact": _has_any_keyword(norm_text, FORM_FIELDS["impact"]["keywords"]) or len(norm_text.split()) >= 12,
+    }
+
+    missing_fields = []
+    questions = []
+
+    for field_name, config in FORM_FIELDS.items():
+        if not detected.get(field_name, False):
+            missing_fields.append(field_name)
+            questions.append({
+                "field": field_name,
+                "question": config["question"],
+            })
+
+    return {
+        "needs_follow_up": bool(missing_fields),
+        "missing_fields": missing_fields,
+        "questions": questions,
+    }
 
 
 # ======================================================

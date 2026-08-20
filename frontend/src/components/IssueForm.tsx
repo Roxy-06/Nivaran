@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { API } from "../services/api";
 
+type FollowUpQuestion = {
+  field: string;
+  question: string;
+};
+
 export default function IssueForm() {
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -10,6 +15,7 @@ export default function IssueForm() {
   const [loading, setLoading] = useState(false);
   const [theme] = useState<"light" | "dark">("light");
   const [locationReady, setLocationReady] = useState(false);
+  const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
 
   const useMyLocation = () => {
     if (locationReady) return;
@@ -24,6 +30,33 @@ export default function IssueForm() {
     );
   };
 
+  const runFollowUpCheck = async () => {
+    if (!message.trim()) {
+      setFollowUpQuestions([
+        {
+          field: "issue_type",
+          question: "What kind of civic issue are you reporting?",
+        },
+      ]);
+      return true;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("message", message);
+      if (lat !== null) formData.append("latitude", lat.toString());
+      if (lng !== null) formData.append("longitude", lng.toString());
+
+      const res = await API.post("/issues/follow-up", formData);
+      const questions = res.data.questions || [];
+      setFollowUpQuestions(questions);
+      return Boolean(res.data.needs_follow_up);
+    } catch {
+      setFollowUpQuestions([]);
+      return false;
+    }
+  };
+
   const submitIssue = async () => {
     if (!message || lat === null || lng === null) {
       alert("Please describe the issue and allow location access");
@@ -31,6 +64,11 @@ export default function IssueForm() {
     }
 
     try {
+      const followUpNeeded = await runFollowUpCheck();
+      if (followUpNeeded) {
+        return;
+      }
+
       setLoading(true);
       setSerial(null);
 
@@ -48,6 +86,7 @@ export default function IssueForm() {
       setLocationReady(false);
       setLat(null);
       setLng(null);
+      setFollowUpQuestions([]);
     } catch {
       alert("Submission failed");
     } finally {
@@ -89,8 +128,17 @@ export default function IssueForm() {
             <textarea
               placeholder="Describe the public issue in detail..."
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e: any) => setMessage(e.target.value)}
             />
+
+            {followUpQuestions.length > 0 && (
+              <div className="followup">
+                <h3>Need a little more info</h3>
+                {followUpQuestions.map((item: FollowUpQuestion, index: number) => (
+                  <p key={`${item.field}-${index}`}>{item.question}</p>
+                ))}
+              </div>
+            )}
 
             <button
               className={`secondary ${locationReady ? "disabled" : ""}`}
@@ -103,7 +151,7 @@ export default function IssueForm() {
             <input
               type="file"
               accept="image/*,video/*"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={(e: any) => setFile(e.target.files?.[0] || null)}
             />
 
             <button className="primary" onClick={submitIssue} disabled={loading}>
@@ -182,6 +230,23 @@ export default function IssueForm() {
           background: transparent;
           margin-bottom: 16px;
           color: #000000;    
+        }
+
+        .followup {
+          margin: 0 0 16px;
+          padding: 14px 16px;
+          border: 1px solid #f59e0b;
+          border-radius: 8px;
+          background: rgba(245, 158, 11, 0.08);
+        }
+
+        .followup h3 {
+          margin: 0 0 10px;
+        }
+
+        .followup p {
+          margin: 6px 0;
+          line-height: 1.5;
         }
 
         button {
