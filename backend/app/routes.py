@@ -10,12 +10,21 @@ from fastapi import (
 from datetime import datetime
 import os
 
-from app.auth import get_current_user, verify_password, create_token
-from app.database import issues_collection, users_collection
-from app.utils import generate_serial
-from app.geo import detect_nearby_places
-from app.ai import analyze_issue
-from app.models import UserLogin
+try:
+    from app.auth import get_current_user, verify_password, create_token
+    from app.database import issues_collection, users_collection
+    from app.utils import generate_serial
+    from app.geo import detect_nearby_places
+    from app.ai import analyze_issue
+    from app.models import UserLogin
+except ModuleNotFoundError:
+    from auth import get_current_user, verify_password, create_token
+    from database import issues_collection, users_collection
+    from utils import generate_serial
+    from geo import detect_nearby_places
+    from ai import analyze_issue
+    from models import UserLogin
+
 
 # ======================================================
 # ROUTER
