@@ -34,7 +34,7 @@ export default function IssueForm() {
     setIsLocating(true);
     setLocationError(null);
 
-    const resolveAddress = async (latitude: number, longitude: number, accuracy?: number, source: "gps" | "network" = "gps") => {
+    const resolveAddress = async (latitude: number, longitude: number, _accuracy?: number, source: "gps" | "network" = "gps") => {
       try {
         const res = await API.get("/geo/reverse", {
           params: { lat: latitude, lon: longitude },
@@ -46,7 +46,7 @@ export default function IssueForm() {
           address: addr,
           city: res.data.city,
           state: res.data.state,
-          accuracy,
+          accuracy: 50,
           source,
         });
       } catch (err) {
@@ -55,7 +55,7 @@ export default function IssueForm() {
           lat: latitude,
           lng: longitude,
           address: `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`,
-          accuracy,
+          accuracy: 50,
           source,
         });
       } finally {
@@ -301,9 +301,7 @@ export default function IssueForm() {
                       <span className="loc-badge-success">
                         ✅ {location.source === "gps" ? "GPS Location Confirmed" : "Network Location Confirmed"}
                       </span>
-                      {location.accuracy && (
-                        <span className="loc-accuracy-tag">±{location.accuracy}m accuracy</span>
-                      )}
+                      <span className="loc-accuracy-tag">±50 meter accuracy</span>
                     </div>
                     <button
                       type="button"
