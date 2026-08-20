@@ -60,7 +60,7 @@ export default function IssueForm() {
       {/* NAVBAR */}
       <header className="navbar">
         <div className="nav-content">
-          <h1>CivicPulse</h1>
+          <h1>Nivaran</h1>
         </div>
       </header>
 

@@ -62,7 +62,7 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2>CivicPulse Login</h2>
+        <h2>Nivaran Login</h2>
 
         {error && <p style={styles.error}>{error}</p>}
 

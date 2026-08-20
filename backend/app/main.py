@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 # ======================================================
 
 app = FastAPI(
-    title="CivicPulse API",
+    title="Nivaran API",
     description="Multilingual AI-powered civic issue reporting system",
     version="1.0.0"
 )
@@ -47,5 +47,5 @@ app.include_router(router)
 
 @app.get("/")
 def root():
-    return {"status": "CivicPulse backend running"}
+    return {"status": "Nivaran backend running"}
 

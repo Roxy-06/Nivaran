@@ -81,12 +81,12 @@ Dashboard runs at **http://localhost:5174**
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@civicpulse.com | admin123 |
-| Electricity Board | electricity@civicpulse.com | department123 |
-| Municipality | municipality@civicpulse.com | department123 |
-| Roads Department | roads@civicpulse.com | department123 |
-| Water Board | water@civicpulse.com | department123 |
-| Public Safety | safety@civicpulse.com | department123 |
+| Admin | admin@nivaran.in | admin123 |
+| Electricity Board | electricity@nivaran.in | department123 |
+| Municipality | municipality@nivaran.in | department123 |
+| Roads Department | roads@nivaran.in | department123 |
+| Water Board | water@nivaran.in | department123 |
+| Public Safety | safety@nivaran.in | department123 |
 
 ---
 
