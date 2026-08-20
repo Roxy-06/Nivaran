@@ -16,6 +16,8 @@ export default function IssueForm() {
   const [theme] = useState<"light" | "dark">("light");
   const [locationReady, setLocationReady] = useState(false);
   const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
+  const [followUpSubmissionId, setFollowUpSubmissionId] = useState<string | null>(null);
+  const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({});
 
   const useMyLocation = () => {
     if (locationReady) return;
@@ -50,10 +52,47 @@ export default function IssueForm() {
       const res = await API.post("/issues/follow-up", formData);
       const questions = res.data.questions || [];
       setFollowUpQuestions(questions);
+      if (res.data.submission_id) setFollowUpSubmissionId(res.data.submission_id);
       return Boolean(res.data.needs_follow_up);
     } catch {
       setFollowUpQuestions([]);
       return false;
+    }
+  };
+
+  const sendFollowUpResponses = async () => {
+    if (!followUpSubmissionId) return;
+
+    try {
+      setLoading(true);
+
+      for (const q of followUpQuestions) {
+        const answer = followUpAnswers[q.field] || "";
+        await API.post(`/followup/${followUpSubmissionId}/response`, {
+          field: q.field,
+          answer,
+        });
+      }
+
+      // fetch status
+      const status = await API.get(`/followup/${followUpSubmissionId}`);
+      if (status.data && status.data.final_issue_serial) {
+        setSerial(status.data.final_issue_serial);
+
+        // reset form
+        setMessage("");
+        setFile(null);
+        setLocationReady(false);
+        setLat(null);
+        setLng(null);
+        setFollowUpQuestions([]);
+        setFollowUpSubmissionId(null);
+        setFollowUpAnswers({});
+      }
+    } catch (e) {
+      alert("Failed to submit follow-up answers");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -135,8 +174,22 @@ export default function IssueForm() {
               <div className="followup">
                 <h3>Need a little more info</h3>
                 {followUpQuestions.map((item: FollowUpQuestion, index: number) => (
-                  <p key={`${item.field}-${index}`}>{item.question}</p>
+                  <div key={`${item.field}-${index}`} style={{ marginBottom: 8 }}>
+                    <p>{item.question}</p>
+                    <input
+                      type="text"
+                      value={followUpAnswers[item.field] || ""}
+                      onChange={(e) =>
+                        setFollowUpAnswers((s) => ({ ...s, [item.field]: e.target.value }))
+                      }
+                      placeholder="Your answer"
+                    />
+                  </div>
                 ))}
+
+                <button className="primary" onClick={sendFollowUpResponses} disabled={loading}>
+                  {loading ? "Sending..." : "Send Answers"}
+                </button>
               </div>
             )}
 

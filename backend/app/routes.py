@@ -15,6 +15,12 @@ from app.database import issues_collection, users_collection
 from app.utils import generate_serial
 from app.geo import detect_nearby_places
 from app.ai import analyze_issue, get_missing_info_questions
+from app.services.followup_service import (
+    create_incomplete_submission,
+    add_followup_response,
+    get_submission,
+)
+from app.database import incomplete_submissions_collection
 from app.models import UserLogin
 
 # ======================================================
@@ -63,7 +69,56 @@ async def follow_up_questions(
     if latitude is not None and longitude is not None:
         nearby = detect_nearby_places(latitude, longitude)
 
-    return get_missing_info_questions(message, nearby)
+    result = get_missing_info_questions(message, nearby)
+    # If follow-up is needed, create an incomplete submission record
+    if result.get("needs_follow_up"):
+        submission_id = await create_incomplete_submission(
+            original_message=message,
+            location={"lat": latitude, "lon": longitude},
+            areaImpact=nearby,
+            missing_fields=result.get("missing_fields", []),
+            questions=result.get("questions", []),
+        )
+
+        return {
+            "needs_follow_up": True,
+            "submission_id": submission_id,
+            "questions": result.get("questions", []),
+        }
+
+    return result
+
+
+# ======================================================
+# FOLLOW-UP: SUBMIT RESPONSE TO A QUESTION
+# ======================================================
+@router.post("/followup/{submission_id}/response")
+async def submit_followup_response(submission_id: str, data: dict = Body(...)):
+    field = data.get("field")
+    answer = data.get("answer")
+
+    if not field or answer is None:
+        raise HTTPException(status_code=400, detail="field and answer required")
+
+    result = await add_followup_response(submission_id, field, answer)
+
+    if result.get("error"):
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    return result
+
+
+# ======================================================
+# FOLLOW-UP: GET SUBMISSION STATUS
+# ======================================================
+@router.get("/followup/{submission_id}")
+async def get_followup(submission_id: str):
+    doc = await get_submission(submission_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    # convert ObjectId etc if present
+    return doc
 
 
 # ======================================================

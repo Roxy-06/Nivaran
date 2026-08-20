@@ -8,3 +8,4 @@ db = client["civicpulse"]
 
 issues_collection = db["issues"]
 users_collection = db["users"]  # ✅ ADD THIS
+incomplete_submissions_collection = db["incomplete_submissions"]
