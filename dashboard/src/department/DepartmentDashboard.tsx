@@ -7,7 +7,7 @@ type Issue = {
   status: "Reported" | "In Progress" | "Resolved";
   message?: string;
   areaImpact?: string[] | { schools?: number; hospitals?: number; residential?: number };
-  location?: { lat: number; lon: number };
+  location?: { lat: number; lon: number; address?: string };
   media?: string | null;
   voice_audio?: string | null;
   detected_language?: string | null;
@@ -113,7 +113,7 @@ export default function DepartmentDashboard() {
               <div style={{ marginTop: 12, marginBottom: 12, padding: 12, background: "#eff6ff", borderRadius: 8 }}>
                 <b style={{ color: "#1e40af", display: "block", marginBottom: 6 }}>🎙️ Citizen Voice Recording:</b>
                 <audio
-                  src={`http://localhost:8000/${selectedIssue.voice_audio}`}
+                  src={`http://localhost:8000/${selectedIssue.voice_audio.replace(/\\/g, "/")}`}
                   controls
                   style={{ width: "100%", height: 36 }}
                 />
@@ -146,10 +146,25 @@ export default function DepartmentDashboard() {
             ) : null}
 
             {selectedIssue.location && (
-              <p>
-                <b>Location:</b>{" "}
-                {selectedIssue.location.lat}, {selectedIssue.location.lon}
-              </p>
+              <div style={{ marginTop: 10, marginBottom: 10, padding: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                <b style={{ color: "#0f172a" }}>📍 Location & Address:</b>
+                {selectedIssue.location.address && (
+                  <p style={{ margin: "4px 0", color: "#1e293b", fontWeight: 500, fontSize: 13, lineHeight: 1.4 }}>
+                    {selectedIssue.location.address}
+                  </p>
+                )}
+                <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, fontSize: 12, color: "#64748b" }}>
+                  <span>Coordinates: {selectedIssue.location.lat.toFixed(5)}° N, {selectedIssue.location.lon.toFixed(5)}° E</span>
+                  <a
+                    href={`https://www.google.com/maps?q=${selectedIssue.location.lat},${selectedIssue.location.lon}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
+                  >
+                    🗺️ View on Google Maps ↗
+                  </a>
+                </div>
+              </div>
             )}
 
             {selectedIssue.media && (

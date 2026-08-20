@@ -192,7 +192,7 @@ export default function StatusCheck() {
               <div className="voice-playback-card">
                 <h4>🎙️ Citizen Voice Recording</h4>
                 <audio
-                  src={`http://localhost:8000/${data.voice_audio}`}
+                  src={`http://localhost:8000/${data.voice_audio.replace(/\\/g, "/")}`}
                   controls
                   className="voice-audio-element"
                 />

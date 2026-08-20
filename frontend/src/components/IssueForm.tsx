@@ -2,6 +2,16 @@ import { useState } from "react";
 import { API } from "../services/api";
 import VoiceRecorder, { type VoiceTranscriptionResult } from "./VoiceRecorder";
 
+interface LocationData {
+  lat: number;
+  lng: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  accuracy?: number;
+  source?: "gps" | "network";
+}
+
 export default function IssueForm() {
   const [reportMode, setReportMode] = useState<"voice" | "text">("voice");
   const [message, setMessage] = useState("");
@@ -11,25 +21,97 @@ export default function IssueForm() {
   const [voiceAudioFile, setVoiceAudioFile] = useState<File | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
+  const [location, setLocation] = useState<LocationData | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
   const [serial, setSerial] = useState<string | null>(null);
   const [submissionResult, setSubmissionResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [theme] = useState<"light" | "dark">("light");
-  const [locationReady, setLocationReady] = useState(false);
 
-  const useMyLocation = () => {
-    if (locationReady) return;
+  const captureLocation = async () => {
+    setIsLocating(true);
+    setLocationError(null);
+
+    const resolveAddress = async (latitude: number, longitude: number, accuracy?: number, source: "gps" | "network" = "gps") => {
+      try {
+        const res = await API.get("/geo/reverse", {
+          params: { lat: latitude, lon: longitude },
+        });
+        const addr = res.data.formatted_address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        setLocation({
+          lat: latitude,
+          lng: longitude,
+          address: addr,
+          city: res.data.city,
+          state: res.data.state,
+          accuracy,
+          source,
+        });
+      } catch (err) {
+        console.error("Reverse geocoding error:", err);
+        setLocation({
+          lat: latitude,
+          lng: longitude,
+          address: `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`,
+          accuracy,
+          source,
+        });
+      } finally {
+        setIsLocating(false);
+      }
+    };
+
+    if (!navigator.geolocation) {
+      fallbackToIpLocation(resolveAddress);
+      return;
+    }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setLocationReady(true);
+        const { latitude, longitude, accuracy } = pos.coords;
+        resolveAddress(latitude, longitude, Math.round(accuracy), "gps");
       },
-      () => alert("Location permission denied")
+      (err) => {
+        console.warn("Browser GPS failed or denied, trying IP fallback:", err.message);
+        fallbackToIpLocation(resolveAddress);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 0,
+      }
     );
+  };
+
+  const fallbackToIpLocation = async (
+    resolveAddress: (lat: number, lon: number, acc?: number, src?: "gps" | "network") => void
+  ) => {
+    try {
+      const ipRes = await fetch("https://freeipapi.com/api/json");
+      const ipData = await ipRes.json();
+      if (ipData.latitude && ipData.longitude) {
+        resolveAddress(Number(ipData.latitude), Number(ipData.longitude), 500, "network");
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const ipRes = await fetch("https://ipapi.co/json/");
+      const ipData = await ipRes.json();
+      if (ipData.latitude && ipData.longitude) {
+        resolveAddress(Number(ipData.latitude), Number(ipData.longitude), 500, "network");
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    setIsLocating(false);
+    setLocationError("Could not detect location automatically. Please enable GPS permissions in your browser.");
   };
 
   const handleVoiceTranscription = (result: VoiceTranscriptionResult) => {
@@ -37,14 +119,18 @@ export default function IssueForm() {
     setTranslation(result.translation);
     setDetectedLanguage(result.detected_language);
     setVoiceAudioFile(result.audioFile);
-    // Populate message with translation or transcript
     setMessage(result.translation || result.transcript);
   };
 
   const submitIssue = async () => {
     const finalMessage = message.trim() || translation.trim() || transcript.trim();
-    if (!finalMessage || lat === null || lng === null) {
-      alert("Please describe or record the issue and allow location access");
+    if (!finalMessage) {
+      alert("Please describe or record the civic issue.");
+      return;
+    }
+
+    if (!location) {
+      alert("Please tap '📍 Capture My Location' before submitting so we can route the issue to the local municipal team.");
       return;
     }
 
@@ -55,8 +141,9 @@ export default function IssueForm() {
 
       const formData = new FormData();
       formData.append("message", finalMessage);
-      formData.append("latitude", lat.toString());
-      formData.append("longitude", lng.toString());
+      formData.append("latitude", location.lat.toString());
+      formData.append("longitude", location.lng.toString());
+      if (location.address) formData.append("address", location.address);
       if (file) formData.append("file", file);
       if (voiceAudioFile) formData.append("voice_audio_file", voiceAudioFile);
       if (transcript) formData.append("transcript", transcript);
@@ -80,12 +167,9 @@ export default function IssueForm() {
       setTranslation("");
       setVoiceAudioFile(null);
       setFile(null);
-      setLocationReady(false);
-      setLat(null);
-      setLng(null);
     } catch (err) {
       console.error(err);
-      alert("Submission failed. Please check network connection.");
+      alert("Submission failed. Please check your network connection.");
     } finally {
       setLoading(false);
     }
@@ -187,17 +271,83 @@ export default function IssueForm() {
               />
             </div>
 
-            <div className="action-row">
-              <button
-                type="button"
-                className={`secondary ${locationReady ? "disabled" : ""}`}
-                onClick={useMyLocation}
-                disabled={locationReady}
-              >
-                {locationReady ? "📍 Location Detected" : "📍 Capture My Location"}
-              </button>
+            {/* LOCATION DETECTION SECTION */}
+            <div className="location-section">
+              <div className="location-action-bar">
+                <button
+                  type="button"
+                  className={`location-btn ${location ? "detected" : ""} ${isLocating ? "loading" : ""}`}
+                  onClick={captureLocation}
+                  disabled={isLocating}
+                >
+                  {isLocating ? (
+                    <>
+                      <span className="location-spinner"></span>
+                      📡 Detecting GPS Location...
+                    </>
+                  ) : location ? (
+                    <>📍 Location Captured (Tap to Refresh)</>
+                  ) : (
+                    <>📍 Capture My Location</>
+                  )}
+                </button>
+              </div>
+
+              {/* LOCATION DETAILS CARD */}
+              {location && (
+                <div className="location-card-preview">
+                  <div className="loc-card-header">
+                    <div className="loc-badge-row">
+                      <span className="loc-badge-success">
+                        ✅ {location.source === "gps" ? "GPS Location Confirmed" : "Network Location Confirmed"}
+                      </span>
+                      {location.accuracy && (
+                        <span className="loc-accuracy-tag">±{location.accuracy}m accuracy</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="loc-refresh-btn"
+                      onClick={captureLocation}
+                      title="Refresh Location"
+                    >
+                      🔄 Refresh
+                    </button>
+                  </div>
+
+                  <div className="loc-address-text">
+                    <strong>📍 Address: </strong>
+                    <span>{location.address}</span>
+                  </div>
+
+                  <div className="loc-coords-row">
+                    <span className="loc-coords">
+                      🌐 <strong>Coordinates:</strong> {location.lat.toFixed(5)}° N, {location.lng.toFixed(5)}° E
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="loc-map-link"
+                    >
+                      🗺️ View on Map ↗
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* LOCATION ERROR BANNER */}
+              {locationError && (
+                <div className="location-error-alert">
+                  <span>⚠️ {locationError}</span>
+                  <button type="button" onClick={captureLocation} className="loc-retry-btn">
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
 
+            {/* MEDIA UPLOAD SECTION */}
             <div className="file-upload-section">
               <label htmlFor="media-upload">Attach Photo or Video Proof (Optional):</label>
               <input
@@ -208,7 +358,7 @@ export default function IssueForm() {
               />
             </div>
 
-            <button className="primary" onClick={submitIssue} disabled={loading}>
+            <button className="primary" onClick={submitIssue} disabled={loading || isLocating}>
               {loading ? "Processing with Multilingual AI..." : "🚀 Submit Civic Report"}
             </button>
 
@@ -407,6 +557,162 @@ export default function IssueForm() {
           background: #ffffff;
         }
 
+        /* LOCATION SECTION */
+        .location-section {
+          margin-bottom: 20px;
+        }
+
+        .location-btn {
+          width: 100%;
+          padding: 12px 18px;
+          border-radius: 8px;
+          border: none;
+          background: #334155;
+          color: white;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .location-btn:hover:not(:disabled) {
+          background: #1e293b;
+        }
+
+        .location-btn.detected {
+          background: #059669;
+        }
+
+        .location-btn.loading {
+          background: #475569;
+          cursor: wait;
+        }
+
+        .location-spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid #cbd5e1;
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .location-card-preview {
+          margin-top: 12px;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          border-radius: 10px;
+          padding: 14px 16px;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.06);
+        }
+
+        .loc-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+
+        .loc-badge-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .loc-badge-success {
+          font-size: 12px;
+          font-weight: 700;
+          color: #166534;
+        }
+
+        .loc-accuracy-tag {
+          background: #dcfce7;
+          border: 1px solid #86efac;
+          color: #15803d;
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 600;
+        }
+
+        .loc-refresh-btn {
+          background: transparent;
+          border: none;
+          color: #059669;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 4px;
+        }
+
+        .loc-refresh-btn:hover {
+          background: #d1fae5;
+        }
+
+        .loc-address-text {
+          font-size: 13px;
+          color: #1e293b;
+          line-height: 1.5;
+          margin-bottom: 8px;
+        }
+
+        .loc-coords-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+          font-size: 12px;
+          color: #475569;
+          border-top: 1px dashed #86efac;
+          padding-top: 8px;
+        }
+
+        .loc-map-link {
+          color: #2563eb;
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 12px;
+        }
+
+        .loc-map-link:hover {
+          text-decoration: underline;
+        }
+
+        .location-error-alert {
+          margin-top: 10px;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          padding: 10px 14px;
+          border-radius: 8px;
+          font-size: 13px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .loc-retry-btn {
+          background: #dc2626;
+          color: white;
+          border: none;
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
         .file-upload-section {
           margin-bottom: 18px;
         }
@@ -447,17 +753,6 @@ export default function IssueForm() {
 
         .primary:hover:not(:disabled) {
           background: #1d4ed8;
-        }
-
-        .secondary {
-          background: #334155;
-          color: white;
-          margin-bottom: 14px;
-        }
-
-        .secondary.disabled {
-          background: #16a34a;
-          cursor: default;
         }
 
         .success {

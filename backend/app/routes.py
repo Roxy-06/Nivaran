@@ -21,7 +21,7 @@ try:
     from app.auth import get_current_user, verify_password, create_token
     from app.database import issues_collection, users_collection
     from app.utils import generate_serial
-    from app.geo import detect_nearby_places
+    from app.geo import detect_nearby_places, reverse_geocode
     from app.ai import analyze_issue
     from app.models import UserLogin
     from app.translator import SUPPORTED_LANGUAGES, translate_to_english, translate_from_english
@@ -30,7 +30,7 @@ except ImportError:
     from auth import get_current_user, verify_password, create_token
     from database import issues_collection, users_collection
     from utils import generate_serial
-    from geo import detect_nearby_places
+    from geo import detect_nearby_places, reverse_geocode
     from ai import analyze_issue
     from models import UserLogin
     from translator import SUPPORTED_LANGUAGES, translate_to_english, translate_from_english
@@ -41,6 +41,11 @@ except ImportError:
 # ROUTER
 # ======================================================
 router = APIRouter()
+
+@router.get("/geo/reverse")
+async def get_reverse_geocode(lat: float, lon: float):
+    """Reverse geocodes coordinates to street address and locality."""
+    return reverse_geocode(lat, lon)
 
 UPLOAD_DIR = "uploads"
 VOICE_DIR = os.path.join(UPLOAD_DIR, "voice")
@@ -190,10 +195,13 @@ async def create_voice_issue(
         with open(media_path, "wb") as f:
             f.write(await file.read())
 
+    geo_data = reverse_geocode(latitude, longitude)
+    address_val = geo_data.get("formatted_address")
+
     issue_doc = {
         "serial": serial,
         "message": translation or transcript,
-        "location": {"lat": latitude, "lon": longitude},
+        "location": {"lat": latitude, "lon": longitude, "address": address_val},
         "areaImpact": area_impact,
         "media": media_path,
         "voice_audio": voice_path,
@@ -217,7 +225,8 @@ async def create_voice_issue(
         "transcript": transcript,
         "translation": translation,
         "detected_language": detected_lang,
-        "voice_audio": voice_path
+        "voice_audio": voice_path,
+        "location": issue_doc["location"]
     }
 
 
@@ -229,6 +238,7 @@ async def create_issue(
     message: str = Form(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
+    address: str = Form(None),
     file: UploadFile = File(None),
     voice_audio_file: UploadFile = File(None),
     transcript: str = Form(None),
@@ -260,10 +270,12 @@ async def create_issue(
         with open(voice_path, "wb") as f:
             f.write(await voice_audio_file.read())
 
+    address_val = address or reverse_geocode(latitude, longitude).get("formatted_address")
+
     issue_doc = {
         "serial": serial,
         "message": message,
-        "location": {"lat": latitude, "lon": longitude},
+        "location": {"lat": latitude, "lon": longitude, "address": address_val},
         "areaImpact": area_impact,
         "media": media_path,
         "voice_audio": voice_path,
@@ -286,6 +298,7 @@ async def create_issue(
         "confidence": analysis["confidence"],
         "transcript": issue_doc["transcript"],
         "translation": issue_doc["translation"],
+        "location": issue_doc["location"],
     }
 
 
