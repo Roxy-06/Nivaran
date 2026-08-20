@@ -20,7 +20,8 @@ pip-wheel-metadata/
 # FastAPI / Uvicorn
 *.log
 
-# Uploads (user files)
+# Uploads (user files & audio)
+uploads/
 backend/uploads/
 
 # OS / Editor
