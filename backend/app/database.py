@@ -4,15 +4,14 @@ import sqlite3
 import json
 import uuid
 from datetime import datetime
-from passlib.context import CryptContext
+from app.auth import pwd_context
+
 
 # Set up SQLite database file paths
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "db"))
 os.makedirs(DB_DIR, exist_ok=True)
-DB_PATH = os.path.join(DB_DIR, "civicpulse.db")
+DB_PATH = os.path.join(DB_DIR, "nivaran.db")
 
-# Setup Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -58,42 +57,42 @@ def init_db():
         default_users = [
             {
                 "_id": str(uuid.uuid4()),
-                "email": "admin@civicpulse.com",
+                "email": "admin@nivaran.in",
                 "password": pwd_context.hash("admin123"),
                 "role": "admin",
                 "department": None
             },
             {
                 "_id": str(uuid.uuid4()),
-                "email": "electricity@civicpulse.com",
+                "email": "electricity@nivaran.in",
                 "password": pwd_context.hash("department123"),
                 "role": "department_user",
                 "department": "Electricity Board"
             },
             {
                 "_id": str(uuid.uuid4()),
-                "email": "municipality@civicpulse.com",
+                "email": "municipality@nivaran.in",
                 "password": pwd_context.hash("department123"),
                 "role": "department_user",
                 "department": "Municipality"
             },
             {
                 "_id": str(uuid.uuid4()),
-                "email": "roads@civicpulse.com",
+                "email": "roads@nivaran.in",
                 "password": pwd_context.hash("department123"),
                 "role": "department_user",
                 "department": "Roads Department"
             },
             {
                 "_id": str(uuid.uuid4()),
-                "email": "water@civicpulse.com",
+                "email": "water@nivaran.in",
                 "password": pwd_context.hash("department123"),
                 "role": "department_user",
                 "department": "Water Board"
             },
             {
                 "_id": str(uuid.uuid4()),
-                "email": "safety@civicpulse.com",
+                "email": "safety@nivaran.in",
                 "password": pwd_context.hash("department123"),
                 "role": "department_user",
                 "department": "Public Safety"
