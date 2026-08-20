@@ -1,6 +1,10 @@
 import requests
+import logging
+
+logger = logging.getLogger("nivaran.geo")
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse"
 
 def detect_nearby_places(lat: float, lon: float):
     query = f"""
@@ -32,8 +36,54 @@ def detect_nearby_places(lat: float, lon: float):
             "residential": sum(1 for e in elements if e.get("tags", {}).get("building") == "residential")
         }
 
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Overpass API error: {e}")
         return default_area()
+
+def reverse_geocode(lat: float, lon: float) -> dict:
+    """
+    Reverse geocodes lat/lon into human-readable street address and locality.
+    """
+    try:
+        headers = {"User-Agent": "NivaranCivicApp/1.0 (contact@nivaran.in)"}
+        params = {
+            "format": "json",
+            "lat": lat,
+            "lon": lon,
+            "zoom": 18,
+            "addressdetails": 1
+        }
+        res = requests.get(NOMINATIM_URL, params=params, headers=headers, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            address = data.get("address", {})
+            road = address.get("road") or address.get("pedestrian") or address.get("suburb") or ""
+            neighbourhood = address.get("neighbourhood") or address.get("residential") or ""
+            city = address.get("city") or address.get("town") or address.get("village") or address.get("county") or ""
+            state = address.get("state") or ""
+            country = address.get("country") or ""
+            postcode = address.get("postcode") or ""
+
+            parts = [p for p in [road, neighbourhood, city, state, postcode, country] if p]
+            formatted_address = ", ".join(parts) if parts else data.get("display_name", f"{lat:.4f}, {lon:.4f}")
+
+            return {
+                "formatted_address": formatted_address,
+                "city": city,
+                "state": state,
+                "country": country,
+                "raw": data.get("display_name", "")
+            }
+    except Exception as e:
+        logger.warning(f"Reverse geocoding error: {e}")
+
+    return {
+        "formatted_address": f"Coordinates: {lat:.4f}, {lon:.4f}",
+        "city": "",
+        "state": "",
+        "country": "",
+        "raw": ""
+    }
 
 def default_area():
     return {

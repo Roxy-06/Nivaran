@@ -7,12 +7,17 @@ type Issue = {
   priority: "Low" | "Medium" | "High";
   status: "Reported" | "In Progress" | "Resolved";
   message?: string;
-  areaImpact?: string[];
+  areaImpact?: string[] | { schools?: number; hospitals?: number; residential?: number };
   location?: {
     lat: number;
     lon: number;
+    address?: string;
   };
   media?: string | null;
+  voice_audio?: string | null;
+  detected_language?: string | null;
+  transcript?: string | null;
+  translation?: string | null;
   reportedAt?: string;
 };
 
@@ -169,22 +174,65 @@ export default function AdminDashboard() {
             <p><b>Status:</b> {selectedIssue.status}</p>
             <p><b>Priority:</b> {selectedIssue.priority}</p>
 
-            {selectedIssue.message && (
-              <p><b>Description:</b> {selectedIssue.message}</p>
+            {selectedIssue.voice_audio && (
+              <div style={{ marginTop: 12, marginBottom: 12, padding: 12, background: "#eff6ff", borderRadius: 8 }}>
+                <b style={{ color: "#1e40af", display: "block", marginBottom: 6 }}>🎙️ Citizen Voice Recording:</b>
+                <audio
+                  src={`http://localhost:8000/${selectedIssue.voice_audio.replace(/\\/g, "/")}`}
+                  controls
+                  style={{ width: "100%", height: 36 }}
+                />
+              </div>
             )}
 
-            {Array.isArray(selectedIssue.areaImpact) && (
+            {selectedIssue.transcript && selectedIssue.transcript !== selectedIssue.message && (
+              <div style={{ marginTop: 10, padding: 10, background: "#fdf4ff", borderRadius: 8 }}>
+                <b style={{ color: "#86198f" }}>
+                  Original Transcript ({selectedIssue.detected_language ? selectedIssue.detected_language.toUpperCase() : "REGIONAL"}):
+                </b>
+                <p style={{ margin: "4px 0 0 0", color: "#4c0519" }}>{selectedIssue.transcript}</p>
+              </div>
+            )}
+
+            {selectedIssue.message && (
+              <p><b>Description (Standardized):</b> {selectedIssue.translation || selectedIssue.message}</p>
+            )}
+
+            {Array.isArray(selectedIssue.areaImpact) ? (
               <p>
                 <b>Nearby Places:</b>{" "}
                 {selectedIssue.areaImpact.join(", ")}
               </p>
-            )}
+            ) : selectedIssue.areaImpact && typeof selectedIssue.areaImpact === "object" ? (
+              <p>
+                <b>Nearby Places:</b>{" "}
+                {Object.entries(selectedIssue.areaImpact)
+                  .filter(([_, count]) => (count as number) > 0)
+                  .map(([type, count]) => `${count} ${type}`)
+                  .join(", ") || "None"}
+              </p>
+            ) : null}
 
             {selectedIssue.location && (
-              <p>
-                <b>Location:</b>{" "}
-                {selectedIssue.location.lat}, {selectedIssue.location.lon}
-              </p>
+              <div style={{ marginTop: 10, marginBottom: 10, padding: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                <b style={{ color: "#0f172a" }}>📍 Location & Address:</b>
+                {selectedIssue.location.address && (
+                  <p style={{ margin: "4px 0", color: "#1e293b", fontWeight: 500, fontSize: 13, lineHeight: 1.4 }}>
+                    {selectedIssue.location.address}
+                  </p>
+                )}
+                <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, fontSize: 12, color: "#64748b" }}>
+                  <span>Coordinates: {selectedIssue.location.lat.toFixed(5)}° N, {selectedIssue.location.lon.toFixed(5)}° E</span>
+                  <a
+                    href={`https://www.google.com/maps?q=${selectedIssue.location.lat},${selectedIssue.location.lon}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
+                  >
+                    🗺️ View on Google Maps ↗
+                  </a>
+                </div>
+              </div>
             )}
 
             {selectedIssue.media && (

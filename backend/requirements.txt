@@ -8,3 +8,8 @@ bcrypt==4.0.1
 sentence-transformers
 requests
 email-validator
+SpeechRecognition
+pydub
+gTTS
+deep-translator
+imageio-ffmpeg

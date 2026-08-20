@@ -1,9 +1,17 @@
+import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+# Ensure backend directory is in python path
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 try:
     from app.routes import router
-except ModuleNotFoundError:
+except ImportError:
     from routes import router
 
 
@@ -34,9 +42,10 @@ app.add_middleware(
 )
 
 # ======================================================
-# Routes
+# Routes & Uploads
 # ======================================================
 
+os.makedirs("uploads/voice", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(router)
