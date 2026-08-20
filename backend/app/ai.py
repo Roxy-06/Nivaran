@@ -1,13 +1,19 @@
-from sentence_transformers import SentenceTransformer, util
+try:
+    from sentence_transformers import SentenceTransformer, util
+    HAS_ST = True
+except Exception:
+    HAS_ST = False
+
 import re
 
-# ======================================================
-# Multilingual semantic model (EN + TA + HI)
-# ======================================================
-
-model = SentenceTransformer(
-    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-)
+model = None
+if HAS_ST:
+    try:
+        model = SentenceTransformer(
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        )
+    except Exception:
+        model = None
 
 FORM_FIELDS = {
     "issue_type": {
@@ -137,12 +143,16 @@ NON_PUBLIC_TOPICS = [
     "company problem"
 ]
 
-# Precompute embeddings
-CATEGORY_EMB = {
-    dept: model.encode(texts, convert_to_tensor=True)
-    for dept, texts in CATEGORIES.items()
-}
-NON_PUBLIC_EMB = model.encode(NON_PUBLIC_TOPICS, convert_to_tensor=True)
+# Precompute embeddings only if model is available
+if model is not None:
+    CATEGORY_EMB = {
+        dept: model.encode(texts, convert_to_tensor=True)
+        for dept, texts in CATEGORIES.items()
+    }
+    NON_PUBLIC_EMB = model.encode(NON_PUBLIC_TOPICS, convert_to_tensor=True)
+else:
+    CATEGORY_EMB = {}
+    NON_PUBLIC_EMB = None
 
 
 def _normalize_text(text: str) -> str:
@@ -208,40 +218,82 @@ def analyze_issue(text: str, nearby: dict):
     }
     """
 
-    emb = model.encode(text, convert_to_tensor=True)
+    # If sentence-transformers is available, use embedding based analysis
+    if model is not None and NON_PUBLIC_EMB is not None and CATEGORY_EMB:
+        emb = model.encode(text, convert_to_tensor=True)
 
-    # ---------- Public vs Non-public ----------
-    non_public_score = util.cos_sim(emb, NON_PUBLIC_EMB).max().item()
-    if non_public_score > 0.55:
+        # ---------- Public vs Non-public ----------
+        non_public_score = util.cos_sim(emb, NON_PUBLIC_EMB).max().item()
+        if non_public_score > 0.55:
+            return {
+                "notPublicIssue": True,
+                "confidence": round(non_public_score, 2)
+            }
+
+        # ---------- Department Detection ----------
+        best_dept = "General Administration"
+        best_score = 0.0
+
+        for dept, refs in CATEGORY_EMB.items():
+            score = util.cos_sim(emb, refs).max().item()
+            if score > best_score:
+                best_score = score
+                best_dept = dept
+
+        # ---------- Danger / Priority ----------
+        danger_refs = model.encode(
+            ["danger", "emergency", "risk", "accident", "unsafe"],
+            convert_to_tensor=True
+        )
+        danger_score = util.cos_sim(emb, danger_refs).max().item()
+
+        nearby_score = (
+            nearby.get("schools", 0)
+            + nearby.get("hospitals", 0) * 2
+            + nearby.get("residential", 0)
+        )
+
+        final_score = danger_score + nearby_score * 0.3
+
+        if final_score > 1.2:
+            priority = "High"
+        elif final_score > 0.7:
+            priority = "Medium"
+        else:
+            priority = "Low"
+
+        confidence = round(min(1.0, (best_score + danger_score) / 2), 2)
+
         return {
-            "notPublicIssue": True,
-            "confidence": round(non_public_score, 2)
+            "notPublicIssue": False,
+            "department": best_dept,
+            "priority": priority,
+            "confidence": confidence
         }
 
-    # ---------- Department Detection ----------
+    # Fallback lightweight heuristic when sentence-transformers is unavailable
+    norm = _normalize_text(text)
+    
+    # Non-public quick check
+    if _has_any_keyword(norm, NON_PUBLIC_TOPICS):
+        return {"notPublicIssue": True, "confidence": 0.6}
+
+    # Department by keyword frequency
     best_dept = "General Administration"
-    best_score = 0.0
-
-    for dept, refs in CATEGORY_EMB.items():
-        score = util.cos_sim(emb, refs).max().item()
-        if score > best_score:
-            best_score = score
+    for dept, kws in CATEGORIES.items():
+        if _has_any_keyword(norm, kws):
             best_dept = dept
+            break
 
-    # ---------- Danger / Priority ----------
-    danger_refs = model.encode(
-        ["danger", "emergency", "risk", "accident", "unsafe"],
-        convert_to_tensor=True
-    )
-    danger_score = util.cos_sim(emb, danger_refs).max().item()
-
+    # Priority heuristics
+    danger = _has_any_keyword(norm, ["danger", "emergency", "risk", "accident", "unsafe"])
     nearby_score = (
         nearby.get("schools", 0)
         + nearby.get("hospitals", 0) * 2
         + nearby.get("residential", 0)
     )
 
-    final_score = danger_score + nearby_score * 0.3
+    final_score = (1.0 if danger else 0.0) + nearby_score * 0.3
 
     if final_score > 1.2:
         priority = "High"
@@ -250,11 +302,11 @@ def analyze_issue(text: str, nearby: dict):
     else:
         priority = "Low"
 
-    confidence = round(min(1.0, (best_score + danger_score) / 2), 2)
+    confidence = 0.5 if best_dept != "General Administration" else 0.3
 
     return {
         "notPublicIssue": False,
         "department": best_dept,
         "priority": priority,
-        "confidence": confidence
+        "confidence": confidence,
     }
