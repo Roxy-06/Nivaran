@@ -169,3 +169,36 @@ export const AudioWaveIcon: React.FC<IconProps> = ({ size = 20, color = "current
         <line x1="21" y1="12" x2="21" y2="12" />
     </svg>
 );
+
+export const ShieldIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12 3 5 6v5c0 4.5 2.9 8.5 7 10 4.1-1.5 7-5.5 7-10V6l-7-3Z" />
+        <path d="m9 12 2 2 4-4" />
+    </svg>
+);
+
+export const LandmarkIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="m3 10 9-6 9 6" />
+        <path d="M5 10h14M4 20h16M6 10v7M10 10v7M14 10v7M18 10v7" />
+    </svg>
+);
+
+export const ClipboardIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="5" y="4" width="14" height="17" rx="2" />
+        <path d="M9 4.5V3h6v1.5M9 10h6M9 14h4" />
+    </svg>
+);
+
+export const DownloadIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+    </svg>
+);
+
+export const SparklesIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="m12 3-1.2 4.8L6 9l4.8 1.2L12 15l1.2-4.8L18 9l-4.8-1.2L12 3ZM19 15l-.7 2.3L16 18l2.3.7L19 21l.7-2.3L22 18l-2.3-.7L19 15Z" />
+    </svg>
+);

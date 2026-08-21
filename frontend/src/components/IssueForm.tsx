@@ -11,7 +11,9 @@ import {
   UploadIcon,
   GlobeIcon,
   LinkIcon,
-  LightningIcon
+  LightningIcon,
+  ClipboardIcon,
+  LandmarkIcon
 } from "./Icons";
 
 interface LocationData {
@@ -480,7 +482,7 @@ export default function IssueForm() {
                 marginTop: "10px"
               }}>
                 <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--terracotta-red)", display: "block", marginBottom: "4px" }}>
-                  💡 Quick Context Question ({previewData.clarification_question.field}):
+                  <LightningIcon size={14} /> Quick Context Question ({previewData.clarification_question.field}):
                 </span>
                 <p style={{ margin: "0 0 8px 0", fontSize: "13px", color: "var(--text-main)", fontStyle: "italic" }}>
                   "{detectedLanguage === "hi" ? previewData.clarification_question.question_hi : previewData.clarification_question.question_en}"
@@ -560,7 +562,7 @@ export default function IssueForm() {
               }}
               onClick={() => setShowMapPin(!showMapPin)}
             >
-              📍 {showMapPin ? "Hide Map Selector" : "Choose on Map / Drop Pin"}
+              <PinIcon size={16} /> {showMapPin ? "Hide Map Selector" : "Choose on Map / Drop Pin"}
             </button>
           </div>
 
@@ -701,7 +703,7 @@ export default function IssueForm() {
                   boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
                 }}
               >
-                {copied ? "✓ Copied!" : "📋 Copy ID"}
+                {copied ? <><CheckIcon size={14} /> Copied!</> : <><ClipboardIcon size={14} /> Copy ID</>}
               </button>
             </div>
 
@@ -731,7 +733,7 @@ export default function IssueForm() {
                     fontSize: "13px",
                     color: "var(--indigo-deep)"
                   }}>
-                    <b>🏛️ Linked Macro Issue:</b> {submissionResult.cluster_title}
+                    <b style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><LandmarkIcon size={14} /> Linked Macro Issue:</b> {submissionResult.cluster_title}
                   </div>
                 )}
               </>

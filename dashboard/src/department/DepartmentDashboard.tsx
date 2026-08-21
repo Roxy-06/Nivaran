@@ -8,7 +8,9 @@ import {
   MapIcon,
   TextIcon,
   MicrophoneIcon,
-  LinkIcon
+  LinkIcon,
+  LandmarkIcon,
+  DownloadIcon
 } from "../components/Icons";
 import { exportGrievancesToCSV } from "../utils/exportCsv";
 
@@ -98,7 +100,7 @@ export default function DepartmentDashboard() {
 
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <span style={{ fontSize: "12px", background: "rgba(197, 160, 89, 0.12)", border: "1px solid var(--border-gold)", padding: "4px 10px", borderRadius: "20px", color: "var(--indigo-deep)", fontWeight: 600 }}>
-              🏛️ {deptName} ({userEmail})
+              <LandmarkIcon size={14} /> {deptName} ({userEmail})
             </span>
             <button
               onClick={handleLogout}
@@ -144,7 +146,7 @@ export default function DepartmentDashboard() {
               onClick={() => exportGrievancesToCSV(issues, `nivaran_${deptName.toLowerCase().replace(/\s+/g, "_")}_grievances`)}
               title="Download CSV report of department complaints"
             >
-              📥 Export
+                <DownloadIcon size={15} /> Export
             </button>
           </div>
         </div>
@@ -313,7 +315,7 @@ export default function DepartmentDashboard() {
 
             {selectedIssue.location && (
               <div style={{ marginBottom: "16px", padding: "12px", background: "var(--sandstone-bg)", borderRadius: "8px", border: "1px solid var(--border-gold)" }}>
-                <b style={{ color: "var(--indigo-deep)", fontSize: "13px" }}>📍 Geolocation & Landmark:</b>
+                <b style={{ color: "var(--indigo-deep)", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "5px" }}><LandmarkIcon size={14} /> Geolocation & Landmark:</b>
                 <p style={{ margin: "4px 0", fontSize: "13px", color: "var(--text-main)" }}>
                   {selectedIssue.location.address || `${selectedIssue.location.lat}, ${selectedIssue.location.lon}`}
                 </p>

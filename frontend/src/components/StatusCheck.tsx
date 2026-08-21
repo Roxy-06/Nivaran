@@ -11,7 +11,9 @@ import {
   WaterIcon,
   RoadIcon,
   CleanIcon,
-  AlertIcon
+  AlertIcon,
+  LandmarkIcon,
+  SparklesIcon
 } from "./Icons";
 
 const TTS_LANGUAGES = [
@@ -288,7 +290,7 @@ export default function StatusCheck() {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
                 <span style={{ fontFamily: "Marcellus, serif", fontSize: "15px", fontWeight: 700, color: "var(--indigo-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
-                  🏛️ Correlated Macro Civic Incident
+                  <LandmarkIcon size={16} /> Correlated Macro Civic Incident
                 </span>
                 <span style={{
                   fontSize: "12px",
@@ -379,7 +381,7 @@ export default function StatusCheck() {
               animation: "fadeInUp 0.4s ease"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "20px" }}>🌟</span>
+                      <SparklesIcon size={20} color="var(--heritage-gold-dark)" />
                 <h4 style={{ fontFamily: "Marcellus, serif", color: "var(--forest-green)", margin: 0, fontSize: "16px" }}>
                   Citizen Resolution Quality Feedback
                 </h4>

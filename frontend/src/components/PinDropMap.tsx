@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { PinIcon } from "./Icons";
 
 interface PinDropMapProps {
   initialLat?: number;
@@ -100,7 +101,7 @@ export default function PinDropMap({
     <div style={{ animation: "fadeInUp 0.3s ease", marginBottom: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexWrap: "wrap", gap: "8px" }}>
         <div style={{ fontSize: "13px", color: "var(--indigo-deep)", fontWeight: 600 }}>
-          📍 Tap map or drag pin to select exact grievance spot
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><PinIcon size={15} /> Tap map or drag pin to select exact grievance spot</span>
         </div>
         {onClose && (
           <button
