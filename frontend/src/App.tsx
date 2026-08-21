@@ -9,12 +9,12 @@ export default function App() {
   // Detailed SVG representation of a traditional Indian Mandala decoration
   const MandalaSVG = () => (
     <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="100" cy="100" r="95" stroke="var(--heritage-gold)" strokeWidth="0.5" strokeDasharray="3 3" />
-      <circle cx="100" cy="100" r="85" stroke="var(--heritage-gold)" strokeWidth="0.75" />
-      <circle cx="100" cy="100" r="70" stroke="var(--heritage-gold)" strokeWidth="0.5" strokeDasharray="1 4" />
-      <circle cx="100" cy="100" r="55" stroke="var(--heritage-gold)" strokeWidth="1" />
-      <circle cx="100" cy="100" r="30" stroke="var(--heritage-gold)" strokeWidth="0.75" />
-      <circle cx="100" cy="100" r="10" stroke="var(--heritage-gold)" strokeWidth="1.5" />
+      <circle cx="100" cy="100" r="95" stroke="var(--chakra-gold)" strokeWidth="0.5" strokeDasharray="3 3" />
+      <circle cx="100" cy="100" r="85" stroke="var(--chakra-gold)" strokeWidth="0.75" />
+      <circle cx="100" cy="100" r="70" stroke="var(--chakra-gold)" strokeWidth="0.5" strokeDasharray="1 4" />
+      <circle cx="100" cy="100" r="55" stroke="var(--chakra-gold)" strokeWidth="1" />
+      <circle cx="100" cy="100" r="30" stroke="var(--chakra-gold)" strokeWidth="0.75" />
+      <circle cx="100" cy="100" r="10" stroke="var(--chakra-gold)" strokeWidth="1.5" />
 
       {/* Concentric Petals */}
       {Array.from({ length: 24 }).map((_, i) => {
@@ -24,7 +24,7 @@ export default function App() {
             key={`outer-${i}`}
             d={`M 100 100 L 100 15 A 8 8 0 0 1 105 30 L 100 100`}
             transform={`rotate(${angle} 100 100)`}
-            stroke="var(--heritage-gold)"
+            stroke="var(--chakra-gold)"
             strokeWidth="0.5"
             opacity="0.75"
           />
@@ -39,7 +39,7 @@ export default function App() {
             key={`inner-${i}`}
             d={`M 100 100 L 100 45 A 5 5 0 0 1 103 55 L 100 100`}
             transform={`rotate(${angle} 100 100)`}
-            stroke="var(--heritage-gold)"
+            stroke="var(--chakra-gold)"
             strokeWidth="0.75"
             opacity="0.85"
           />

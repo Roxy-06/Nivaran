@@ -124,6 +124,48 @@ export const AudioWaveIcon: React.FC<IconProps> = ({ size = 20, color = "current
     </svg>
 );
 
+export const ShieldIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12 3 5 6v5c0 4.5 2.9 8.5 7 10 4.1-1.5 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" />
+    </svg>
+);
+
+export const LandmarkIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="m3 10 9-6 9 6" /><path d="M5 10h14M4 20h16M6 10v7M10 10v7M14 10v7M18 10v7" />
+    </svg>
+);
+
+export const CrownIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="m3 7 4 4 5-7 5 7 4-4-2 11H5L3 7Z" /><path d="M5 21h14" />
+    </svg>
+);
+
+export const ClipboardIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4.5V3h6v1.5M9 10h6M9 14h4" />
+    </svg>
+);
+
+export const DownloadIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+    </svg>
+);
+
+export const WaterIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7Z" />
+    </svg>
+);
+
+export const RoadIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M7 3 3 21M17 3l4 18M12 4v3M12 11v3M12 18v2" />
+    </svg>
+);
+
 export const LayersIcon: React.FC<IconProps> = ({ size = 20, color = "currentColor", ...props }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <polygon points="12 2 2 7 12 12 22 7 12 2" />
