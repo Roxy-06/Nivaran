@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { API } from "../services/api";
+import {
+  MicrophoneIcon,
+  StopIcon,
+  RefreshIcon,
+  AlertIcon,
+  GlobeIcon
+} from "./Icons";
 
 export interface VoiceTranscriptionResult {
   transcript: string;
@@ -138,20 +145,22 @@ export default function VoiceRecorder({
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const barWidth = (canvas.width / bufferLength) * 2.5;
+      const barWidth = (canvas.width / bufferLength) * 2.2;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
         const barHeight = (dataArray[i] / 255) * canvas.height;
 
+        // Custom Gradient using Indian Heritage Color System: Saffron Sitar to Silk Indigo
         const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        gradient.addColorStop(0, "#2563eb");
-        gradient.addColorStop(1, "#f43f5e");
+        gradient.addColorStop(0, "#1b365d"); // Silk Indigo
+        gradient.addColorStop(0.5, "#a83f2c"); // Terracotta Saffron
+        gradient.addColorStop(1, "#c5a059"); // Gold Accent
 
         ctx.fillStyle = gradient;
         ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
 
-        x += barWidth + 1;
+        x += barWidth + 1.5;
       }
     };
 
@@ -177,7 +186,6 @@ export default function VoiceRecorder({
       });
       mediaStreamRef.current = stream;
 
-      // AudioContext for pure PCM WAV recording + Visualizer
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 16000,
       });
@@ -188,7 +196,6 @@ export default function VoiceRecorder({
       analyser.fftSize = 64;
       analyserRef.current = analyser;
 
-      // ScriptProcessor for raw PCM float samples
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
       processorNodeRef.current = processor;
 
@@ -203,7 +210,6 @@ export default function VoiceRecorder({
 
       drawWaveform();
 
-      // Optional Browser Live Speech Recognition for instant feedback
       const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRec) {
         try {
@@ -263,7 +269,6 @@ export default function VoiceRecorder({
       processorNodeRef.current.disconnect();
     }
 
-    // Merge Float32Array chunks into single continuous buffer
     const chunks = recordedSamplesRef.current;
     let totalLength = 0;
     for (const chunk of chunks) {
@@ -287,14 +292,12 @@ export default function VoiceRecorder({
       return;
     }
 
-    // Encode to standard 16-bit PCM WAV
     const wavBlob = encodeWAV(mergedSamples, sampleRate);
     setAudioBlob(wavBlob);
 
     const url = URL.createObjectURL(wavBlob);
     setAudioUrl(url);
 
-    // Auto transcribe
     handleAutoTranscribe(wavBlob);
   };
 
@@ -331,7 +334,6 @@ export default function VoiceRecorder({
       onTranscriptionComplete(result);
     } catch (err: any) {
       console.error("Transcription error:", err);
-      // If live transcript was captured by browser, fallback gracefully
       if (liveTranscript && liveTranscript.trim()) {
         const fallbackResult: VoiceTranscriptionResult = {
           transcript: liveTranscript,
@@ -361,18 +363,20 @@ export default function VoiceRecorder({
   };
 
   return (
-    <div className="voice-recorder-card">
-      <div className="vr-header">
-        <div className="vr-title">
-          <span className="vr-icon">🎙️</span>
+    <div className="voice-panel">
+      <div className="voice-panel-heading">
+        <div className="voice-panel-title">
+          <div className="voice-icon-box">
+            <MicrophoneIcon size={18} />
+          </div>
           <div>
-            <h3>Multilingual Voice Report</h3>
-            <p className="vr-subtitle">Speak in Hindi, Tamil, Telugu, Bengali, Marathi, or English</p>
+            <h3>Voice Transcription Portal</h3>
+            <p>Describe your issue in your regional Mother Tongue</p>
           </div>
         </div>
 
-        {/* LANGUAGE SELECTOR */}
-        <div className="vr-lang-picker">
+        {/* SELECT LANGUAGE BAR */}
+        <div className="voice-select-box">
           <label htmlFor="voice-lang-select">Language:</label>
           <select
             id="voice-lang-select"
@@ -382,408 +386,130 @@ export default function VoiceRecorder({
           >
             {LANGUAGES.map((lang) => (
               <option key={lang.code} value={lang.code}>
-                {lang.name} ({lang.native})
+                {lang.name} - {lang.native}
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* WAVEFORM CANVAS */}
-      <div className={`vr-visualizer-container ${isRecording ? "active" : ""}`}>
+      {/* WAVEFORM VISUALIZER */}
+      <div className={`visualizer-wrapper ${isRecording ? "recording" : ""}`}>
         <canvas
           ref={canvasRef}
           width={360}
           height={60}
-          className="vr-waveform-canvas"
+          className="waveform-canvas"
           style={{ display: isRecording ? "block" : "none" }}
         />
         {!isRecording && !audioUrl && (
-          <div className="vr-placeholder">
-            <span className="pulse-circle"></span>
-            <span>Click the microphone button and describe the issue</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--text-muted)", fontSize: "13px" }}>
+            <span className="visualizer-pulse"></span>
+            <span>Tap start below and formulate your voice grievance</span>
           </div>
         )}
         {audioUrl && !isRecording && (
-          <div className="vr-audio-preview">
-            <audio src={audioUrl} controls className="vr-audio-player" />
+          <div className="audio-preview-row">
+            <audio src={audioUrl} controls />
           </div>
         )}
       </div>
 
-      {/* LIVE CAPTION PREVIEW WHILE SPEAKING */}
+      {/* LIVE CAPTION POPUP */}
       {isRecording && liveTranscript && (
-        <div className="vr-live-caption">
-          <span className="live-dot"></span>
+        <div className="live-caption-alert">
+          <span className="live-indicator-dot"></span>
           <span>"{liveTranscript}"</span>
         </div>
       )}
 
       {/* CONTROLS */}
-      <div className="vr-controls">
+      <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
         {!isRecording ? (
           <button
             type="button"
-            className="vr-btn vr-record-btn"
+            className="btn-heritage-primary"
+            style={{ flex: 1 }}
             onClick={startRecording}
             disabled={disabled || isTranscribing}
           >
-            🎤 Start Speaking
+            <MicrophoneIcon size={16} color="#ffffff" />
+            Begin Grievance Speech
           </button>
         ) : (
           <button
             type="button"
-            className="vr-btn vr-stop-btn"
+            className="btn-heritage-primary"
+            style={{ flex: 1, background: "var(--terracotta-red)" }}
             onClick={stopRecording}
           >
-            ⏹️ Done Speaking ({formatTime(recordingDuration)})
+            <StopIcon size={14} color="#ffffff" />
+            Conclude Grievance Speech ({formatTime(recordingDuration)})
           </button>
         )}
 
         {audioBlob && !isRecording && (
           <button
             type="button"
-            className="vr-btn vr-retranscribe-btn"
+            className="btn-heritage-secondary"
+            style={{ width: "auto" }}
             onClick={() => handleAutoTranscribe(audioBlob)}
             disabled={isTranscribing}
           >
-            {isTranscribing ? "Transcribing..." : "🔄 Re-transcribe Audio"}
+            <RefreshIcon size={15} />
+            Re-transcribe Action
           </button>
         )}
       </div>
 
-      {/* STATUS INDICATOR */}
+      {/* TRANSCRIBING STATUS DIALOG */}
       {isTranscribing && (
-        <div className="vr-transcribing-banner">
-          <div className="spinner"></div>
-          <span>Transcribing voice and translating to English with AI...</span>
+        <div className="status-loading-banner">
+          <span className="spinner-gold"></span>
+          <span>Decoding linguistics and preparing translation arrays...</span>
         </div>
       )}
 
-      {/* ERROR MESSAGE */}
+      {/* DETECTED ERROR */}
       {errorMessage && (
-        <div className="vr-error-alert">
-          <span>⚠️ {errorMessage}</span>
+        <div className="location-alert-err" style={{ marginTop: 0, marginBottom: "16px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <AlertIcon size={16} />
+            {errorMessage}
+          </span>
         </div>
       )}
 
-      {/* TRANSCRIPTION & TRANSLATION PREVIEW */}
+      {/* READOUT CARD */}
       {transcription && (
-        <div className="vr-results-panel">
-          <div className="vr-result-badge">
-            <span>Detected Language:</span>
+        <div style={{ background: "var(--sandstone-bg)", border: "1px solid var(--border-gold)", borderRadius: "8px", padding: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(197, 160, 89, 0.15)", color: "var(--indigo-deep)", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 700, width: "fit-content", textTransform: "uppercase", marginBottom: "12px" }}>
+            <GlobeIcon size={12} />
+            <span>Detected tongue:</span>
             <strong>
               {transcription.language_name || transcription.detected_language.toUpperCase()}
             </strong>
           </div>
 
-          <div className="vr-transcript-box">
-            <div className="vr-field-label">Original Speech (Transcribed):</div>
-            <div className="vr-text-content original">{transcription.transcript}</div>
+          <div style={{ marginBottom: "12px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)", marginBottom: "4px" }}>
+              Original Narrative Transcribed:
+            </div>
+            <div style={{ padding: "8px 12px", background: "#ffffff", border: "1px solid var(--border-gold)", borderRadius: "4px", fontSize: "13.5px", color: "var(--text-main)", fontWeight: 500 }}>
+              {transcription.transcript}
+            </div>
           </div>
 
-          <div className="vr-translation-box">
-            <div className="vr-field-label">Standardized English Translation (for Civic Action):</div>
-            <div className="vr-text-content translated">{transcription.translation}</div>
+          <div>
+            <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)", marginBottom: "4px" }}>
+              Remediation Target Translation:
+            </div>
+            <div style={{ padding: "8px 12px", background: "rgba(26, 77, 46, 0.05)", border: "1px solid rgba(26, 77, 46, 0.15)", borderRadius: "4px", fontSize: "13.5px", color: "var(--forest-green)", fontWeight: 500 }}>
+              {transcription.translation}
+            </div>
           </div>
         </div>
       )}
-
-      {/* STYLES */}
-      <style>{`
-        .voice-recorder-card {
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 20px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-        }
-
-        .vr-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-
-        .vr-title {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .vr-icon {
-          font-size: 26px;
-          background: #eff6ff;
-          padding: 8px;
-          border-radius: 10px;
-        }
-
-        .vr-title h3 {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 700;
-          color: #0f172a;
-        }
-
-        .vr-subtitle {
-          margin: 2px 0 0 0;
-          font-size: 12px;
-          color: #64748b;
-        }
-
-        .vr-lang-picker {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .vr-lang-picker label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #475569;
-        }
-
-        .vr-lang-picker select {
-          padding: 6px 10px;
-          border-radius: 8px;
-          border: 1px solid #cbd5e1;
-          font-size: 13px;
-          background: #f8fafc;
-          color: #0f172a;
-          outline: none;
-          cursor: pointer;
-        }
-
-        .vr-visualizer-container {
-          min-height: 70px;
-          background: #f8fafc;
-          border: 1px dashed #cbd5e1;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 10px;
-          margin-bottom: 14px;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .vr-visualizer-container.active {
-          border-color: #ef4444;
-          background: #fef2f2;
-        }
-
-        .vr-waveform-canvas {
-          width: 100%;
-          height: 50px;
-        }
-
-        .vr-placeholder {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: #64748b;
-          font-size: 13px;
-        }
-
-        .pulse-circle {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: #3b82f6;
-          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-          animation: pulseRing 1.8s infinite;
-        }
-
-        @keyframes pulseRing {
-          0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-          70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-
-        .vr-live-caption {
-          background: #eff6ff;
-          border: 1px solid #bfdbfe;
-          color: #1e40af;
-          padding: 8px 12px;
-          border-radius: 8px;
-          font-size: 13px;
-          margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .live-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #ef4444;
-          animation: blink 1s infinite alternate;
-        }
-
-        @keyframes blink {
-          from { opacity: 1; }
-          to { opacity: 0.3; }
-        }
-
-        .vr-audio-preview {
-          width: 100%;
-        }
-
-        .vr-audio-player {
-          width: 100%;
-          height: 38px;
-        }
-
-        .vr-controls {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 14px;
-        }
-
-        .vr-btn {
-          flex: 1;
-          padding: 12px 18px;
-          border-radius: 8px;
-          border: none;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        .vr-record-btn {
-          background: #2563eb;
-          color: white;
-        }
-
-        .vr-record-btn:hover:not(:disabled) {
-          background: #1d4ed8;
-        }
-
-        .vr-stop-btn {
-          background: #dc2626;
-          color: white;
-          animation: pulseRecord 1s infinite alternate;
-        }
-
-        @keyframes pulseRecord {
-          from { opacity: 1; }
-          to { opacity: 0.85; }
-        }
-
-        .vr-retranscribe-btn {
-          background: #f1f5f9;
-          color: #334155;
-          border: 1px solid #cbd5e1;
-        }
-
-        .vr-retranscribe-btn:hover:not(:disabled) {
-          background: #e2e8f0;
-        }
-
-        .vr-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .vr-transcribing-banner {
-          background: #eff6ff;
-          border: 1px solid #bfdbfe;
-          color: #1e40af;
-          padding: 10px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          margin-bottom: 14px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .spinner {
-          width: 16px;
-          height: 16px;
-          border: 2px solid #93c5fd;
-          border-top-color: #1d4ed8;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .vr-error-alert {
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          color: #dc2626;
-          padding: 10px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          margin-bottom: 14px;
-        }
-
-        .vr-results-panel {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 14px;
-        }
-
-        .vr-result-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #e0f2fe;
-          color: #0369a1;
-          padding: 4px 10px;
-          border-radius: 999px;
-          font-size: 12px;
-          margin-bottom: 12px;
-        }
-
-        .vr-transcript-box, .vr-translation-box {
-          margin-bottom: 10px;
-        }
-
-        .vr-field-label {
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #64748b;
-          margin-bottom: 4px;
-        }
-
-        .vr-text-content {
-          padding: 10px 12px;
-          border-radius: 6px;
-          font-size: 14px;
-          line-height: 1.5;
-        }
-
-        .vr-text-content.original {
-          background: #ffffff;
-          border: 1px solid #cbd5e1;
-          color: #0f172a;
-          font-weight: 500;
-        }
-
-        .vr-text-content.translated {
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
-          color: #166534;
-        }
-      `}</style>
     </div>
   );
 }

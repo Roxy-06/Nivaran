@@ -1,5 +1,18 @@
 import { useState, useRef } from "react";
 import { API } from "../services/api";
+import {
+  SearchIcon,
+  VolumeIcon,
+  MicrophoneIcon,
+  SchoolIcon,
+  HospitalIcon,
+  ResidentialIcon,
+  LightningIcon,
+  WaterIcon,
+  RoadIcon,
+  CleanIcon,
+  AlertIcon
+} from "./Icons";
 
 const TTS_LANGUAGES = [
   { code: "en", name: "English" },
@@ -71,7 +84,6 @@ export default function StatusCheck() {
       }
     } catch (err) {
       console.error("Backend TTS failed, trying browser Web Speech API:", err);
-      // Browser SpeechSynthesis fallback
       if ("speechSynthesis" in window) {
         const utterance = new SpeechSynthesisUtterance(summaryText);
         utterance.onend = () => setIsPlayingTts(false);
@@ -83,445 +95,286 @@ export default function StatusCheck() {
     }
   };
 
-  const renderAreaImpact = () => {
-    if (!data?.areaImpact) return "No sensitive areas detected";
+  const getDepartmentIcon = (dept: string) => {
+    const dLower = (dept || "").toLowerCase();
+    if (dLower.includes("electric")) return <LightningIcon size={16} />;
+    if (dLower.includes("water")) return <WaterIcon size={16} />;
+    if (dLower.includes("road")) return <RoadIcon size={16} />;
+    if (dLower.includes("municipal") || dLower.includes("sanitation")) return <CleanIcon size={16} />;
+    return <AlertIcon size={16} />;
+  };
 
-    const impacts: string[] = [];
-    if (data.areaImpact.schools > 0) impacts.push("🏫 Schools nearby");
-    if (data.areaImpact.hospitals > 0) impacts.push("🏥 Hospitals nearby");
-    if (data.areaImpact.residential > 0) impacts.push("🏘️ Residential area");
+  const renderAreaImpactElements = () => {
+    if (!data?.areaImpact) return <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>No sensitive infrastructure affected.</div>;
 
-    return impacts.length ? impacts.join(", ") : "No sensitive areas detected";
+    const items = [];
+    if (data.areaImpact.schools > 0) {
+      items.push(
+        <div key="schools" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", padding: "6px 12px", background: "rgba(15, 32, 66, 0.05)", border: "1px solid var(--border-gold)", borderRadius: "6px", color: "var(--indigo-deep)" }}>
+          <SchoolIcon size={16} color="var(--terracotta-red)" />
+          <span>Schools nearby: {data.areaImpact.schools}</span>
+        </div>
+      );
+    }
+    if (data.areaImpact.hospitals > 0) {
+      items.push(
+        <div key="hospitals" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", padding: "6px 12px", background: "rgba(15, 32, 66, 0.05)", border: "1px solid var(--border-gold)", borderRadius: "6px", color: "var(--indigo-deep)" }}>
+          <HospitalIcon size={16} color="var(--terracotta-red)" />
+          <span>Medical centers nearby: {data.areaImpact.hospitals}</span>
+        </div>
+      );
+    }
+    if (data.areaImpact.residential > 0) {
+      items.push(
+        <div key="residential" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", padding: "6px 12px", background: "rgba(15, 32, 66, 0.05)", border: "1px solid var(--border-gold)", borderRadius: "6px", color: "var(--indigo-deep)" }}>
+          <ResidentialIcon size={16} color="var(--terracotta-red)" />
+          <span>Residential settlement affected</span>
+        </div>
+      );
+    }
+
+    if (items.length === 0) {
+      return <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>Standard impact level. No sensitive zones nearby.</div>;
+    }
+
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px" }}>
+        {items}
+      </div>
+    );
   };
 
   return (
-    <div className="status-page">
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
       <audio ref={ttsAudioRef} style={{ display: "none" }} />
-      <div className="container">
-        <div className="status-header">
-          <h1>Track Civic Issue Status</h1>
-          <p className="subtitle">
-            Enter your serial number to check real-time progress and listen to spoken audio status updates.
-          </p>
-        </div>
 
-        <div className="card">
+      {/* SEARCH CARD */}
+      <section className="card-jali" style={{ marginBottom: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div className="corner-accent corner-top-left"></div>
+        <div className="corner-accent corner-top-right"></div>
+        <div className="corner-accent corner-bottom-left"></div>
+        <div className="corner-accent corner-bottom-right"></div>
+
+        <h3 style={{ fontFamily: "Marcellus, serif", color: "var(--indigo-deep)", margin: 0 }}>
+          Grievance Audit
+        </h3>
+
+        <p style={{ margin: 0, fontSize: "14px", color: "var(--text-muted)" }}>
+          Provide the unique tracking reference key generated upon report filing. You may listen to official status logs translated audio-linguistically in real time.
+        </p>
+
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <input
-            placeholder="Enter Serial Number (e.g. CP-2026-XXXX)"
+            className="input-text"
+            style={{ flex: 3, minWidth: "220px" }}
+            placeholder="Reference Serial Key (e.g. CP-2026-XXXX)"
             value={serial}
             onChange={(e) => setSerial(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && checkStatus()}
           />
-
-          <button onClick={checkStatus} disabled={loading} className="check-btn">
-            {loading ? "Checking..." : "🔍 Check Status"}
+          <button
+            type="button"
+            onClick={checkStatus}
+            disabled={loading}
+            className="btn-heritage-primary"
+            style={{ width: "auto", flex: 1, minWidth: "160px" }}
+          >
+            {loading ? (
+              <span className="spinner-gold" style={{ borderColor: "rgba(255,255,255,0.2)", borderTopColor: "#fff" }}></span>
+            ) : (
+              <>
+                <SearchIcon size={16} />
+                Audit Issue
+              </>
+            )}
           </button>
         </div>
+      </section>
 
-        {error && <p className="error-box">{error}</p>}
+      {error && (
+        <div className="location-alert-err" style={{ marginBottom: "32px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <AlertIcon size={18} />
+            {error}
+          </span>
+        </div>
+      )}
 
-        {data && (
-          <div className="details">
-            <div className="details-header">
-              <h2>Issue Details & Resolution Status</h2>
+      {/* RESULT DETAILS */}
+      {data && (
+        <section className="card-jali" style={{ marginBottom: "32px" }}>
+          <div className="corner-accent corner-top-left"></div>
+          <div className="corner-accent corner-top-right"></div>
+          <div className="corner-accent corner-bottom-left"></div>
+          <div className="corner-accent corner-bottom-right"></div>
+          <div className="jali-lattice"></div>
 
-              {/* VOICE READOUT CONTROL */}
-              <div className="voice-readout-bar">
-                <select
-                  value={ttsLang}
-                  onChange={(e) => setTtsLang(e.target.value)}
-                  className="tts-lang-select"
-                >
-                  {TTS_LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className={`listen-btn ${isPlayingTts ? "playing" : ""}`}
-                  onClick={playStatusVoice}
-                  disabled={isPlayingTts}
-                >
-                  {isPlayingTts ? "🔊 Reading aloud..." : "🔊 Read Status Aloud"}
-                </button>
-              </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", borderBottom: "1.5px solid var(--border-gold)", paddingBottom: "16px", marginBottom: "24px" }}>
+            <h3 style={{ fontFamily: "Marcellus, serif", color: "var(--indigo-deep)", margin: 0 }}>
+              Remediation Action Log
+            </h3>
+
+            {/* TTS SPEECH VOICE READOUT */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <select
+                value={ttsLang}
+                onChange={(e) => setTtsLang(e.target.value)}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--border-gold)", background: "var(--sandstone-light)", fontSize: "13px", outline: "none", color: "var(--indigo-deep)" }}
+              >
+                {TTS_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={`btn-heritage-secondary ${isPlayingTts ? "playing" : ""}`}
+                style={{
+                  width: "auto",
+                  padding: "8px 16px",
+                  borderColor: isPlayingTts ? "var(--terracotta-red)" : "var(--heritage-gold)",
+                  color: isPlayingTts ? "var(--terracotta-red)" : "var(--indigo-deep)",
+                  animation: isPlayingTts ? "wavePulse 1.5s infinite" : "none"
+                }}
+                onClick={playStatusVoice}
+                disabled={isPlayingTts}
+              >
+                <VolumeIcon size={15} color={isPlayingTts ? "var(--terracotta-red)" : "currentColor"} />
+                {isPlayingTts ? "Reciting Status..." : "Audible Triage Status"}
+              </button>
+            </div>
+          </div>
+
+          {/* ATTRIBUTE GRID */}
+          <div className="status-grid">
+            <div className="status-grid-item">
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
+                Reference Serial Key
+              </span>
+              <strong style={{ fontSize: "16px", color: "var(--indigo-deep)", fontFamily: "Marcellus, serif" }}>
+                {data.serial}
+              </strong>
             </div>
 
-            <div className="grid">
-              <div className="stat-item">
-                <span className="stat-label">Serial Number</span>
-                <strong className="serial-num">{data.serial}</strong>
-              </div>
-
-              <div className="stat-item">
-                <span className="stat-label">Current Status</span>
-                <span className={`status-badge ${data.status?.toLowerCase().replace(" ", "-")}`}>
-                  {data.status}
-                </span>
-              </div>
-
-              <div className="stat-item">
-                <span className="stat-label">Assigned Department</span>
-                <strong>{data.department}</strong>
-              </div>
-
-              <div className="stat-item">
-                <span className="stat-label">Priority Level</span>
-                <span className={`priority-badge ${data.priority?.toLowerCase()}`}>
-                  {data.priority}
-                </span>
-              </div>
-
-              <div className="stat-item">
-                <span className="stat-label">Reported On</span>
-                <span>{new Date(data.reportedAt).toLocaleString()}</span>
-              </div>
-
-              <div className="stat-item">
-                <span className="stat-label">Language</span>
-                <span className="lang-tag">
-                  {data.detected_language ? data.detected_language.toUpperCase() : "EN"}
-                </span>
-              </div>
+            <div className="status-grid-item">
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
+                Resolution Stage
+              </span>
+              <span className={`tag-badge`} style={{
+                width: "fit-content",
+                background: data.status === "Resolved" ? "rgba(26, 77, 46, 0.1)" : data.status === "In Progress" ? "rgba(197, 160, 89, 0.15)" : "rgba(15, 32, 66, 0.08)",
+                border: data.status === "Resolved" ? "1px solid rgba(26, 77, 46, 0.2)" : data.status === "In Progress" ? "1px solid var(--border-gold)" : "1px solid rgba(15, 32, 66, 0.15)",
+                color: data.status === "Resolved" ? "var(--forest-green)" : data.status === "In Progress" ? "#8a6524" : "var(--indigo-light)"
+              }}>
+                {data.status}
+              </span>
             </div>
 
-            {/* CITIZEN ORIGINAL VOICE RECORDING */}
-            {data.voice_audio && (
-              <div className="voice-playback-card">
-                <h4>🎙️ Citizen Voice Recording</h4>
+            <div className="status-grid-item">
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
+                Assigned Municipal Unit
+              </span>
+              <strong style={{ fontSize: "14px", color: "var(--indigo-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+                {getDepartmentIcon(data.department)}
+                {data.department}
+              </strong>
+            </div>
+
+            <div className="status-grid-item">
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
+                Urgency Priority
+              </span>
+              <span className={`tag-badge priority-${data.priority?.toLowerCase()}`} style={{ width: "fit-content" }}>
+                {data.priority}
+              </span>
+            </div>
+
+            <div className="status-grid-item">
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
+                Lodge Date
+              </span>
+              <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-main)" }}>
+                {new Date(data.reportedAt).toLocaleDateString()} {new Date(data.reportedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+
+            <div className="status-grid-item">
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
+                Linguistic Source
+              </span>
+              <span className="tag-badge dept" style={{ width: "fit-content" }}>
+                {data.detected_language ? data.detected_language.toUpperCase() : "EN"}
+              </span>
+            </div>
+          </div>
+
+          {/* CITIZEN ORIGINAL AUDIO PLAYBACK */}
+          {data.voice_audio && (
+            <div style={{ marginTop: "24px", padding: "16px", background: "rgba(15, 32, 66, 0.04)", border: "1px solid var(--border-gold)", borderRadius: "8px" }}>
+              <h4 style={{ fontFamily: "Marcellus, serif", margin: "0 0 10px 0", color: "var(--indigo-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
+                <MicrophoneIcon size={16} color="var(--terracotta-red)" />
+                Citizen Voice Archive
+              </h4>
+              <div className="audio-preview-row">
                 <audio
                   src={`http://localhost:8000/${data.voice_audio.replace(/\\/g, "/")}`}
                   controls
-                  className="voice-audio-element"
                 />
               </div>
-            )}
-
-            {/* BILINGUAL TRANSCRIPTS */}
-            {data.transcript && data.transcript !== data.translation && (
-              <div className="block transcript-box">
-                <strong className="block-title">Original Voice Transcript ({data.detected_language?.toUpperCase()}):</strong>
-                <p className="transcript-text">{data.transcript}</p>
-              </div>
-            )}
-
-            <div className="block">
-              <strong className="block-title">Description (English Standardization):</strong>
-              <p className="desc-text">{data.translation || data.message}</p>
             </div>
+          )}
 
-            <div className="block">
-              <strong className="block-title">Surrounding Civic Impact:</strong>
-              <p>{renderAreaImpact()}</p>
+          {/* TEXTUAL TRANSCRIPTS */}
+          {data.transcript && data.transcript !== data.translation && (
+            <div style={{ marginTop: "24px", padding: "16px", background: "rgba(197, 160, 89, 0.05)", borderLeft: "3.5px solid var(--heritage-gold)", borderRadius: "0 8px 8px 0" }}>
+              <strong style={{ fontSize: "12px", color: "var(--heritage-gold-dark)", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "4px" }}>
+                Original Language Transcript ({data.detected_language?.toUpperCase()})
+              </strong>
+              <p style={{ margin: 0, fontSize: "14px", color: "var(--indigo-deep)", fontStyle: "italic", fontWeight: 500 }}>
+                "{data.transcript}"
+              </p>
             </div>
+          )}
 
-            {data.media && (
-              <div className="block">
-                <strong className="block-title">Attached Media Proof:</strong>
-                <div className="media">
-                  {data.media.endsWith(".mp4") || data.media.endsWith(".webm") ? (
-                    <video
-                      src={`http://localhost:8000/uploads/${data.media.split("/").pop()}`}
-                      controls
-                    />
-                  ) : (
-                    <img
-                      src={`http://localhost:8000/uploads/${data.media.split("/").pop()}`}
-                      alt="Proof"
-                    />
-                  )}
-                </div>
-              </div>
-            )}
+          <div style={{ marginTop: "24px" }}>
+            <strong style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "6px" }}>
+              Remediation Target Narrative (English Translation)
+            </strong>
+            <p style={{ margin: 0, fontSize: "15px", color: "var(--text-main)", background: "rgba(15, 32, 66, 0.02)", border: "1px solid rgba(197, 160, 89, 0.15)", padding: "16px", borderRadius: "8px", lineHeight: "1.6" }}>
+              {data.translation || data.message}
+            </p>
           </div>
-        )}
-      </div>
 
-      {/* STYLES */}
-      <style>{`
-        .status-page {
-          min-height: 100vh;
-          width: 100%;
-          background: #f8fafc;
-          color: #0f172a;
-          font-family: system-ui, -apple-system, sans-serif;
-        }
+          <div style={{ marginTop: "24px" }}>
+            <strong style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "6px" }}>
+              Sensitive Infrastructure Impact Assessment
+            </strong>
+            {renderAreaImpactElements()}
+          </div>
 
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 48px 32px;
-        }
-
-        .status-header h1 {
-          font-size: 28px;
-          font-weight: 800;
-          color: #1e293b;
-          margin: 0 0 8px 0;
-        }
-
-        .subtitle {
-          color: #64748b;
-          margin: 0 0 28px 0;
-          font-size: 14px;
-        }
-
-        .card {
-          background: white;
-          padding: 20px;
-          border-radius: 12px;
-          display: flex;
-          gap: 14px;
-          align-items: center;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-        }
-
-        input {
-          flex: 3;
-          padding: 14px 16px;
-          border-radius: 8px;
-          border: 1px solid #cbd5e1;
-          font-size: 15px;
-          outline: none;
-        }
-
-        input:focus {
-          border-color: #2563eb;
-        }
-
-        .check-btn {
-          flex: 1;
-          padding: 14px 20px;
-          border-radius: 8px;
-          border: none;
-          background: #2563eb;
-          color: white;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: background 0.2s;
-        }
-
-        .check-btn:hover:not(:disabled) {
-          background: #1d4ed8;
-        }
-
-        .error-box {
-          margin-top: 16px;
-          padding: 12px 16px;
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          color: #dc2626;
-          border-radius: 8px;
-          font-size: 14px;
-        }
-
-        .details {
-          margin-top: 36px;
-          background: white;
-          padding: 32px;
-          border-radius: 14px;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-        }
-
-        .details-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 16px;
-          margin-bottom: 24px;
-          border-bottom: 1px solid #f1f5f9;
-          padding-bottom: 18px;
-        }
-
-        .details-header h2 {
-          margin: 0;
-          font-size: 20px;
-          color: #0f172a;
-        }
-
-        .voice-readout-bar {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .tts-lang-select {
-          padding: 8px 12px;
-          border-radius: 8px;
-          border: 1px solid #cbd5e1;
-          font-size: 13px;
-          background: #f8fafc;
-          color: #0f172a;
-        }
-
-        .listen-btn {
-          padding: 8px 16px;
-          border-radius: 8px;
-          border: none;
-          background: #0284c7;
-          color: white;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .listen-btn.playing {
-          background: #0369a1;
-          animation: pulseListen 1s infinite alternate;
-        }
-
-        @keyframes pulseListen {
-          from { opacity: 1; }
-          to { opacity: 0.7; }
-        }
-
-        .grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 18px;
-          margin-bottom: 24px;
-        }
-
-        .stat-item {
-          background: #f8fafc;
-          padding: 14px;
-          border-radius: 10px;
-          border: 1px solid #f1f5f9;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .stat-label {
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #64748b;
-          font-weight: 600;
-        }
-
-        .serial-num {
-          color: #1e40af;
-          font-size: 15px;
-        }
-
-        .status-badge {
-          display: inline-block;
-          padding: 3px 10px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 600;
-          width: fit-content;
-        }
-
-        .status-badge.reported { background: #dbeafe; color: #1e40af; }
-        .status-badge.in-progress { background: #fef3c7; color: #92400e; }
-        .status-badge.resolved { background: #dcfce7; color: #166534; }
-
-        .priority-badge {
-          display: inline-block;
-          padding: 3px 10px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 600;
-          width: fit-content;
-        }
-
-        .priority-badge.high { background: #fee2e2; color: #991b1b; }
-        .priority-badge.medium { background: #fef3c7; color: #92400e; }
-        .priority-badge.low { background: #e0f2fe; color: #0369a1; }
-
-        .lang-tag {
-          display: inline-block;
-          background: #e2e8f0;
-          color: #334155;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-          width: fit-content;
-        }
-
-        .voice-playback-card {
-          background: #eff6ff;
-          border: 1px solid #bfdbfe;
-          border-radius: 10px;
-          padding: 14px 18px;
-          margin-bottom: 20px;
-        }
-
-        .voice-playback-card h4 {
-          margin: 0 0 10px 0;
-          color: #1e40af;
-          font-size: 13px;
-        }
-
-        .voice-audio-element {
-          width: 100%;
-          height: 38px;
-        }
-
-        .block {
-          margin-bottom: 20px;
-        }
-
-        .block-title {
-          font-size: 13px;
-          color: #475569;
-          display: block;
-          margin-bottom: 6px;
-        }
-
-        .transcript-box {
-          background: #fdf4ff;
-          border: 1px solid #f5d0fe;
-          padding: 14px;
-          border-radius: 8px;
-        }
-
-        .transcript-text {
-          margin: 0;
-          color: #86198f;
-          font-weight: 500;
-        }
-
-        .desc-text {
-          margin: 0;
-          color: #0f172a;
-          line-height: 1.6;
-        }
-
-        .media img, .media video {
-          max-width: 440px;
-          border-radius: 10px;
-          margin-top: 8px;
-          border: 1px solid #e2e8f0;
-        }
-
-        @media (max-width: 900px) {
-          .card {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .check-btn {
-            width: 100%;
-          }
-
-          .details-header {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-        }
-      `}</style>
+          {data.media && (
+            <div style={{ marginTop: "24px" }}>
+              <strong style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "6px" }}>
+                Civic Proof Artifact
+              </strong>
+              <div className="media-preview-container">
+                {data.media.endsWith(".mp4") || data.media.endsWith(".webm") ? (
+                  <video
+                    src={`http://localhost:8000/uploads/${data.media.split("/").pop()}`}
+                    controls
+                  />
+                ) : (
+                  <img
+                    src={`http://localhost:8000/uploads/${data.media.split("/").pop()}`}
+                    alt="Civic issue verification photo"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
