@@ -37,7 +37,8 @@ def translate_to_english(text: str, source_lang: Optional[str] = "auto") -> Tupl
 
     try:
         from deep_translator import GoogleTranslator
-        src = source_lang if source_lang and source_lang != "auto" else "auto"
+        valid_codes = set(SUPPORTED_LANGUAGES.keys()) - {"auto"}
+        src = source_lang if (source_lang and source_lang in valid_codes) else "auto"
         translator = GoogleTranslator(source=src, target="en")
         translated = translator.translate(cleaned_text)
         
@@ -45,7 +46,6 @@ def translate_to_english(text: str, source_lang: Optional[str] = "auto") -> Tupl
         detected = source_lang if source_lang and source_lang != "auto" else "unknown"
         return translated or cleaned_text, detected
     except Exception as e:
-        logger.warning(f"Translation to English failed: {e}")
         return cleaned_text, source_lang or "en"
 
 

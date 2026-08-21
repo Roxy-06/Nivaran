@@ -10,8 +10,11 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleLogin = async (loginEmail?: string, loginPwd?: string) => {
+    const finalEmail = loginEmail || email;
+    const finalPassword = loginPwd || password;
+
+    if (!finalEmail || !finalPassword) {
       setError("Email and password are required");
       return;
     }
@@ -23,8 +26,8 @@ export default function Login() {
       const res = await axios.post(
         "http://localhost:8000/auth/login",
         {
-          email,
-          password,
+          email: finalEmail,
+          password: finalPassword,
         },
         {
           headers: {
@@ -35,14 +38,15 @@ export default function Login() {
 
       const { token, role, department } = res.data;
 
-      // 🔐 Store auth data
+      // Store auth data
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
+      localStorage.setItem("email", finalEmail);
       if (department) {
         localStorage.setItem("department", department);
       }
 
-      // 🚦 Role-based redirect
+      // Role-based redirect
       if (role === "admin") {
         navigate("/admin", { replace: true });
       } else {
@@ -50,9 +54,9 @@ export default function Login() {
       }
     } catch (err: any) {
       if (err.response?.status === 401) {
-        setError("Invalid email or password");
+        setError("Invalid credentials. Please verify password.");
       } else {
-        setError("Server error. Try again later.");
+        setError("Server error. Please verify backend is active.");
       }
     } finally {
       setLoading(false);
@@ -60,73 +64,127 @@ export default function Login() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2>Nivaran Login</h2>
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "var(--sandstone-light)",
+      padding: "20px"
+    }}>
+      <div className="card-jali" style={{ maxWidth: "420px", width: "100%", padding: "36px 30px" }}>
+        <div className="corner-accent corner-top-left"></div>
+        <div className="corner-accent corner-top-right"></div>
+        <div className="corner-accent corner-bottom-left"></div>
+        <div className="corner-accent corner-bottom-right"></div>
 
-        {error && <p style={styles.error}>{error}</p>}
+        <div style={{ textAlign: "center", marginBottom: "28px" }}>
+          <div className="brand-wrapper" style={{ justifyContent: "center", marginBottom: "6px" }}>
+            <div className="brand-pillar"></div>
+            <h1 className="brand-title" style={{ fontSize: "26px" }}>
+              NIVARAN <span className="brand-subtitle-sanskrit">निवारण</span>
+            </h1>
+          </div>
+          <span style={{ fontSize: "12px", color: "var(--text-muted)", letterSpacing: "1px", textTransform: "uppercase", fontWeight: 600 }}>
+            Official Governance & Triage Portal
+          </span>
+        </div>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-        />
+        {error && (
+          <div style={{
+            background: "rgba(168, 63, 44, 0.08)",
+            border: "1px solid rgba(168, 63, 44, 0.3)",
+            borderRadius: "6px",
+            padding: "10px",
+            color: "var(--terracotta-red)",
+            fontSize: "13px",
+            marginBottom: "16px"
+          }}>
+            {error}
+          </div>
+        )}
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
-        />
+        <div className="form-group">
+          <label className="form-label" style={{ fontSize: "13px" }}>Official Officer Email:</label>
+          <input
+            type="email"
+            placeholder="admin@nivaran.in"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input-text"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" style={{ fontSize: "13px" }}>Password:</label>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input-text"
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+          />
+        </div>
 
         <button
-          onClick={handleLogin}
+          onClick={() => handleLogin()}
           disabled={loading}
-          style={styles.button}
+          className="btn-heritage-primary"
+          style={{ width: "100%", marginBottom: "20px" }}
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Authenticating..." : "Access Control Center"}
         </button>
+
+        {/* QUICK TEST CREDENTIAL CHIPS FOR HACKATHON JURORS */}
+        <div style={{ borderTop: "1px dashed var(--border-gold)", paddingTop: "16px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "8px" }}>
+            ⚡ 1-Click Test Credentials (For Juror Evaluation):
+          </span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            <button
+              type="button"
+              className="lang-chip"
+              style={{ cursor: "pointer", border: "1px solid var(--border-gold)" }}
+              onClick={() => { setEmail("admin@nivaran.in"); setPassword("admin123"); handleLogin("admin@nivaran.in", "admin123"); }}
+            >
+              👑 Global Admin
+            </button>
+            <button
+              type="button"
+              className="lang-chip"
+              style={{ cursor: "pointer", border: "1px solid var(--border-gold)" }}
+              onClick={() => { setEmail("water@nivaran.in"); setPassword("department123"); handleLogin("water@nivaran.in", "department123"); }}
+            >
+              💧 Water Board
+            </button>
+            <button
+              type="button"
+              className="lang-chip"
+              style={{ cursor: "pointer", border: "1px solid var(--border-gold)" }}
+              onClick={() => { setEmail("electricity@nivaran.in"); setPassword("department123"); handleLogin("electricity@nivaran.in", "department123"); }}
+            >
+              ⚡ Electricity Board
+            </button>
+            <button
+              type="button"
+              className="lang-chip"
+              style={{ cursor: "pointer", border: "1px solid var(--border-gold)" }}
+              onClick={() => { setEmail("roads@nivaran.in"); setPassword("department123"); handleLogin("roads@nivaran.in", "department123"); }}
+            >
+              🛣️ Roads Dept
+            </button>
+            <button
+              type="button"
+              className="lang-chip"
+              style={{ cursor: "pointer", border: "1px solid var(--border-gold)" }}
+              onClick={() => { setEmail("municipality@nivaran.in"); setPassword("department123"); handleLogin("municipality@nivaran.in", "department123"); }}
+            >
+              🏛️ Municipality
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#f1f5f9",
-  },
-  card: {
-    width: 360,
-    padding: 30,
-    background: "#fff",
-    borderRadius: 8,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginBottom: 12,
-    borderRadius: 4,
-    border: "1px solid #cbd5e1",
-  },
-  button: {
-    width: "100%",
-    padding: 10,
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    borderRadius: 4,
-    cursor: "pointer",
-  },
-  error: {
-    color: "red",
-    marginBottom: 10,
-  },
-};

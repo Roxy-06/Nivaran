@@ -34,6 +34,12 @@ export default function StatusCheck() {
   const [ttsLang, setTtsLang] = useState("en");
   const [isPlayingTts, setIsPlayingTts] = useState(false);
 
+  // Citizen Feedback State
+  const [rating, setRating] = useState(5);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const checkStatus = async () => {
@@ -47,9 +53,15 @@ export default function StatusCheck() {
       setLoading(true);
       setError("");
       setData(null);
+      setFeedbackSubmitted(false);
 
       const res = await API.get(`/issues/${serial.trim()}`);
       setData(res.data);
+      if (res.data.rating) {
+        setRating(res.data.rating);
+        setFeedbackText(res.data.citizen_feedback || "");
+        setFeedbackSubmitted(true);
+      }
       if (res.data.detected_language && res.data.detected_language !== "auto") {
         setTtsLang(res.data.detected_language);
       }
@@ -57,6 +69,24 @@ export default function StatusCheck() {
       setError("Issue not found or server error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitFeedback = async () => {
+    if (!data?.serial) return;
+    try {
+      setSubmittingFeedback(true);
+      await API.post(`/issues/${data.serial}/feedback`, {
+        rating,
+        feedback: feedbackText
+      });
+      setFeedbackSubmitted(true);
+      setData((prev: any) => ({ ...prev, rating, citizen_feedback: feedbackText }));
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      alert("Failed to submit feedback. Please try again.");
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -246,39 +276,68 @@ export default function StatusCheck() {
             </div>
           </div>
 
+          {/* MACRO ISSUE CORRELATION BANNER */}
+          {data.cluster_details && (
+            <div style={{
+              background: "rgba(197, 160, 89, 0.1)",
+              border: "1.5px solid var(--border-gold)",
+              borderRadius: "10px",
+              padding: "16px 20px",
+              marginBottom: "24px",
+              animation: "fadeInUp 0.4s ease"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+                <span style={{ fontFamily: "Marcellus, serif", fontSize: "15px", fontWeight: 700, color: "var(--indigo-deep)", display: "flex", alignItems: "center", gap: "8px" }}>
+                  🏛️ Correlated Macro Civic Incident
+                </span>
+                <span style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  background: "rgba(15, 32, 66, 0.1)",
+                  color: "var(--indigo-deep)"
+                }}>
+                  {data.cluster_details.total_complaints} Corroborating Citizen Reports
+                </span>
+              </div>
+              <h4 style={{ margin: "4px 0 8px 0", color: "var(--terracotta-red)", fontSize: "16px", fontFamily: "Marcellus, serif" }}>
+                {data.cluster_details.title}
+              </h4>
+              <p style={{ margin: 0, fontSize: "13.5px", color: "var(--text-main)", lineHeight: "1.5" }}>
+                <b>Council Status Note: </b> {data.cluster_details.why_grouped}
+              </p>
+            </div>
+          )}
+
           {/* ATTRIBUTE GRID */}
           <div className="status-grid">
             <div className="status-grid-item">
               <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
                 Reference Serial Key
               </span>
-              <strong style={{ fontSize: "16px", color: "var(--indigo-deep)", fontFamily: "Marcellus, serif" }}>
+              <strong style={{ fontSize: "16px", color: "var(--indigo-deep)", fontFamily: "Marcellus, serif", display: "block", marginTop: "4px" }}>
                 {data.serial}
               </strong>
             </div>
 
             <div className="status-grid-item">
               <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
-                Resolution Stage
+                Triage Status
               </span>
-              <span className={`tag-badge`} style={{
-                width: "fit-content",
-                background: data.status === "Resolved" ? "rgba(26, 77, 46, 0.1)" : data.status === "In Progress" ? "rgba(197, 160, 89, 0.15)" : "rgba(15, 32, 66, 0.08)",
-                border: data.status === "Resolved" ? "1px solid rgba(26, 77, 46, 0.2)" : data.status === "In Progress" ? "1px solid var(--border-gold)" : "1px solid rgba(15, 32, 66, 0.15)",
-                color: data.status === "Resolved" ? "var(--forest-green)" : data.status === "In Progress" ? "#8a6524" : "var(--indigo-light)"
-              }}>
+              <span className={`tag-badge status-${data.status?.toLowerCase().replace(/\s+/g, "-")}`} style={{ width: "fit-content" }}>
                 {data.status}
               </span>
             </div>
 
             <div className="status-grid-item">
               <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)" }}>
-                Assigned Municipal Unit
+                Assigned Council
               </span>
-              <strong style={{ fontSize: "14px", color: "var(--indigo-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span className="tag-badge dept" style={{ width: "fit-content" }}>
                 {getDepartmentIcon(data.department)}
                 {data.department}
-              </strong>
+              </span>
             </div>
 
             <div className="status-grid-item">
@@ -308,6 +367,107 @@ export default function StatusCheck() {
               </span>
             </div>
           </div>
+
+          {/* CITIZEN RESOLUTION FEEDBACK & RATING (FOR RESOLVED ISSUES) */}
+          {data.status === "Resolved" && (
+            <div style={{
+              marginTop: "24px",
+              padding: "20px",
+              background: "linear-gradient(135deg, rgba(26, 77, 46, 0.06), rgba(197, 160, 89, 0.08))",
+              border: "1.5px solid var(--forest-green)",
+              borderRadius: "10px",
+              animation: "fadeInUp 0.4s ease"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <span style={{ fontSize: "20px" }}>🌟</span>
+                <h4 style={{ fontFamily: "Marcellus, serif", color: "var(--forest-green)", margin: 0, fontSize: "16px" }}>
+                  Citizen Resolution Quality Feedback
+                </h4>
+              </div>
+              <p style={{ fontSize: "13.5px", color: "var(--text-main)", margin: "0 0 16px 0" }}>
+                This civic issue has been marked <b>Resolved</b> by municipal officers. Please rate the speed and quality of remediation:
+              </p>
+
+              {feedbackSubmitted ? (
+                <div style={{
+                  padding: "14px",
+                  background: "rgba(26, 77, 46, 0.1)",
+                  borderRadius: "8px",
+                  color: "var(--forest-green)",
+                  fontWeight: 600,
+                  fontSize: "13.5px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <span>✓</span> Thank you! Your {rating}-star rating and feedback have been recorded for public council audits.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {/* Star Selector */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--indigo-deep)" }}>Rating:</span>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRating(s)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            fontSize: "22px",
+                            cursor: "pointer",
+                            padding: "0 2px",
+                            transform: rating >= s ? "scale(1.1)" : "scale(1)",
+                            transition: "transform 0.15s ease",
+                            filter: rating >= s ? "drop-shadow(0 2px 4px rgba(197, 160, 89, 0.5))" : "grayscale(1) opacity(0.4)"
+                          }}
+                        >
+                          ⭐
+                        </button>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "8px" }}>
+                      ({rating} of 5 Stars)
+                    </span>
+                  </div>
+
+                  {/* Feedback Text Input */}
+                  <textarea
+                    rows={3}
+                    placeholder="Share any comments regarding the repair work or cleanup (optional)..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--border-gold)",
+                      background: "#fff",
+                      fontSize: "13px",
+                      fontFamily: "inherit",
+                      outline: "none",
+                      boxSizing: "border-box"
+                    }}
+                  />
+
+                  {/* Submit Button */}
+                  <div>
+                    <button
+                      type="button"
+                      className="btn-heritage-primary"
+                      onClick={submitFeedback}
+                      disabled={submittingFeedback}
+                      style={{ width: "auto", padding: "8px 20px", fontSize: "13px" }}
+                    >
+                      {submittingFeedback ? "Submitting Feedback..." : "Submit Citizen Feedback"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* CITIZEN ORIGINAL AUDIO PLAYBACK */}
           {data.voice_audio && (
